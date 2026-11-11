@@ -294,6 +294,8 @@ elif page == "Istorija aktivnosti":
 elif page == "Podešavanja":
     settings_page()
 else:
-    st.title("Pomoć i prvo pokretanje")
-    guide = Path(__file__).resolve().parent.parent / ("CLOUD-START.md" if CLOUD_MODE else "STREAMLIT-START.md")
-    st.markdown(guide.read_text(encoding="utf-8") if guide.exists() else "Detaljno uputstvo je u datoteci STREAMLIT-START.md u preuzetom paketu.")
+    st.title("Pomoć za operatera")
+    guide = Path(__file__).with_name("OPERATER.md")
+    st.markdown(guide.read_text(encoding="utf-8") if guide.exists() else "Uputstvo za operatera trenutno nije dostupno.")
+    if CLOUD_MODE:
+        st.info("U ovoj testnoj verziji provere prestaju kada se aplikacija uspava ili ugasi. Posle ponovnog pokretanja proveri da li je tvoj spisak sačuvan i po potrebi ga ponovo uvezi.")
