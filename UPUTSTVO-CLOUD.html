@@ -1,0 +1,109 @@
+<!doctype html><html lang="sr-Latn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ScoreGuard Streamlit — uputstvo za početnike</title><style>body{margin:0;background:#f4f7f1;color:#263d2a;font:16px/1.8 system-ui,sans-serif}main{max-width:940px;margin:auto;padding:38px 30px 70px;background:white}header{padding-bottom:25px;border-bottom:1px solid #e1e9dc}.tag{font-size:12px;color:#769262;letter-spacing:1px}.tools{display:flex;gap:12px;flex-wrap:wrap}.tools a,button{padding:9px 15px;border:1px solid #bdd0af;border-radius:6px;background:#f3f7ee;color:#3e6631;text-decoration:none;font:13px system-ui;cursor:pointer}h1{font-size:32px;line-height:1.3;letter-spacing:-1px}h2{font-size:23px;line-height:1.4;padding-top:25px;margin-top:28px;border-top:1px solid #e7eee1;scroll-margin-top:20px}p{margin:14px 0}li{margin:7px 0}a{color:#3d7331;overflow-wrap:anywhere}code{background:#f0f4eb;padding:2px 5px;border-radius:4px;font-size:14px}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:18px;border:1px solid #dce7d2;border-radius:7px;background:#f5f8f0;line-height:1.7}pre code{padding:0;background:none;font-size:13px}blockquote{padding:14px 18px;background:#fff9e9;border-left:4px solid #d1b66f;margin:20px 0;font-size:15px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:1px solid #e1e8da;padding:10px;text-align:left}th{background:#eff5e9}details{background:#f6f9f2;border:1px solid #e1e9d8;padding:16px;border-radius:7px;margin:25px 0}details a{font-size:14px}footer{margin-top:40px;color:#819574;font-size:12px;border-top:1px solid #e1e8da;padding-top:15px}@media print{body{background:white}main{max-width:none;padding:0}.tools,details{display:none}h2{break-after:avoid}pre,blockquote{break-inside:avoid}a{color:inherit;text-decoration:none}}@media(max-width:600px){main{padding:25px 18px}h1{font-size:26px}h2{font-size:21px}}</style></head><body><main><header><div class="tag">SCOREGUARD · CLOUD TEST v0.7 · KORAK PO KORAK</div><p>Panel i servis u istoj Streamlit Cloud instanci.</p><div class="tools"><button onclick="window.print()">Odštampaj / Sačuvaj PDF</button><a href="https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/login">Otvori prijavu za preuzimanje</a><a href="https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/downloads/ScoreGuard-cloud-v0.7.zip">Preuzmi Streamlit paket</a></div></header><details><summary>Sadržaj — otvori spisak koraka</summary><ol><li><a href="#section-1">1. Preuzmite dva odvojena fajla</a></li><li><a href="#section-2">2. Raspakujte programski paket</a></li><li><a href="#section-3">3. Napravite GitHub repozitorijum</a></li><li><a href="#section-4">4. Postavite aplikaciju na Streamlit</a></li><li><a href="#section-5">5. Nalepite konfiguraciju naloga u Secrets</a></li><li><a href="#section-6">6. Prva prijava i unos</a></li><li><a href="#section-7">7. Šta proveriti tokom testa</a></li><li><a href="#section-8">8. Ograničenja ove testne verzije</a></li><li><a href="#section-9">9. Najčešći problemi</a></li><li><a href="#section-10">10. Opciona mapa različitih naziva klubova</a></li><li><a href="#section-11">11. Zvanična dokumentacija</a></li></ol></details><h1 id="guide-title">ScoreGuard Cloud test v0.7 — postavljanje bez servera</h1>
+<p>Ova verzija pokreće Streamlit panel, scraper, naloge i raspored u istoj Streamlit Community Cloud instanci. Ne traži Docker, VPS, domen, BACKEND_URL ni PUBLIC_ORIGIN.</p>
+<p>Pravila poređenja ostaju ista: fudbal, live i završeni mečevi, Flashscore i/ili Sofascore, trenutni rezultat i poluvreme. Povezivanje koristi klubove, datum i vreme; preveden naziv takmičenja ne blokira povezivanje. Minuti golova ne porede se.</p>
+<h2 id="section-1">1. Preuzmite dva odvojena fajla</h2>
+<p>Otvorite privatni ScoreGuard sajt iz razgovora. Ako se traži, prvo se prijavite svojim ChatGPT nalogom, pa u ScoreGuard kao Stefan.</p>
+<ol>
+<li>Preuzmite <code>ScoreGuard-cloud-v0.7.zip</code> — programski fajlovi za GitHub.</li>
+<li>Preuzmite <code>cloud-secrets.toml</code> — konfiguracija postojećih naloga Stefan i Milos.</li>
+<li>Drugi fajl ostavite na svom računaru. Njegov sadržaj kopira se u Streamlit Secrets, a ne na GitHub.</li>
+</ol>
+<p>ZIP ne sadrži stvarne naloge, lozinke, heševe operatera, tokene ili interne spiskove. Odvojeni TOML sadrži heševe postojećih naloga, ne čitljive lozinke. Početne lozinke ostaju one koje ste dobili ranije.</p>
+<p>Adrese za preuzimanje:</p>
+<ul>
+<li><a href="https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/downloads/ScoreGuard-cloud-v0.7.zip" target="_blank" rel="noopener noreferrer">https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/downloads/ScoreGuard-cloud-v0.7.zip</a></li>
+<li><a href="https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/downloads/cloud-secrets.toml" target="_blank" rel="noopener noreferrer">https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/downloads/cloud-secrets.toml</a></li>
+</ul>
+<h2 id="section-2">2. Raspakujte programski paket</h2>
+<ol>
+<li>Desni klik na <code>ScoreGuard-cloud-v0.7.zip</code> → <code>Extract All</code> / <code>Izdvoji sve</code>.</li>
+<li>Otvorite unutrašnju fasciklu <code>scoreguard-cloud</code>.</li>
+<li>U njoj treba da vidite <code>streamlit_app.py</code>, <code>requirements.txt</code>, <code>CLOUD-START.md</code> i fascikle <code>cloud_runtime</code>, <code>streamlit_panel</code>, <code>auth</code>, <code>scraper</code> i <code>service</code>.</li>
+<li>Fajl <code>cloud-secrets.toml</code> držite van ove fascikle.</li>
+</ol>
+<h2 id="section-3">3. Napravite GitHub repozitorijum</h2>
+<ol>
+<li>Otvorite <a href="https://github.com/" target="_blank" rel="noopener noreferrer">https://github.com/</a> i napravite nalog ili se prijavite.</li>
+<li>Kliknite <code>New repository</code> i unesite naziv, na primer <code>scoreguard-cloud-test</code>.</li>
+<li>Izaberite <code>Private</code>, pa <code>Create repository</code>.</li>
+<li>Izaberite <code>uploading an existing file</code> ili <code>Add file</code> → <code>Upload files</code>.</li>
+<li>Prevucite sadržaj unutrašnje fascikle <code>scoreguard-cloud</code>. Prenesite i fajlove i fascikle, uz očuvanu strukturu. Ne prevlačite ZIP ili celu nadređenu fasciklu.</li>
+<li>Kliknite <code>Commit changes</code>.</li>
+</ol>
+<p>Na početnoj strani repozitorijuma treba odmah da se vidi <code>streamlit_app.py</code>. Ako se vidi samo jedna fascikla <code>scoreguard-cloud</code>, otvorili ste dodatni nivo; prenesite njen sadržaj na početni nivo repozitorijuma.</p>
+<p>Skrivena fascikla <code>.streamlit</code> sadrži izgled aplikacije i primer podešavanja. Ako je sistem ne prikaže pri slanju, osnovna aplikacija će i dalje raditi sa podrazumevanim izgledom. Stvarni Secrets se uvek lepe kroz Streamlit sajt.</p>
+<h2 id="section-4">4. Postavite aplikaciju na Streamlit</h2>
+<ol>
+<li>Otvorite <a href="https://share.streamlit.io/" target="_blank" rel="noopener noreferrer">https://share.streamlit.io/</a> i povežite GitHub nalog.</li>
+<li>Dozvolite Streamlitu pristup privatnom repozitorijumu koji ste napravili.</li>
+<li>Kliknite <code>Create app</code>, pa <code>Yup, I have an app</code>.</li>
+<li>Popunite polja prema tabeli:</li>
+</ol>
+<div class="table-wrap"><table><tbody>
+<tr><th>Polje</th><th>Vrednost</th></tr>
+<tr><td>Repository</td><td>vaš GitHub nalog / scoreguard-cloud-test</td></tr>
+<tr><td>Branch</td><td>main, odnosno grana na kojoj ste sačuvali fajlove</td></tr>
+<tr><td>Main file path</td><td>streamlit_app.py</td></tr>
+<tr><td>App URL</td><td>slobodan naziv po želji</td></tr>
+<tr><td>Advanced settings → Python</td><td>3.12</td></tr>
+</tbody></table></div>
+<p><strong>Main file path je <code>streamlit_app.py</code> na početnom nivou.</strong> Taj fajl pokreće i servis. Ranija putanja <code>streamlit_panel/streamlit_app.py</code> pokretala je samo panel.</p>
+<h2 id="section-5">5. Nalepite konfiguraciju naloga u Secrets</h2>
+<ol>
+<li>Dok ste na ekranu za postavljanje, kliknite <code>Advanced settings</code>.</li>
+<li>Izaberite Python <code>3.12</code>.</li>
+<li>Na svom računaru otvorite preuzeti <code>cloud-secrets.toml</code> u Notepadu / Beležnici.</li>
+<li>Pritisnite <code>Ctrl+A</code>, pa <code>Ctrl+C</code> da kopirate ceo sadržaj.</li>
+<li>U polje <code>Secrets</code> na Streamlit sajtu nalepite kopirani sadržaj pomoću <code>Ctrl+V</code>.</li>
+<li>Kliknite <code>Save</code>, pa <code>Deploy</code>.</li>
+</ol>
+<p>Ne dodajete BACKEND_URL, PUBLIC_ORIGIN, Docker fajlove ili svoju serversku adresu. Servis dobija unutrašnju adresu automatski. Primer <code>.streamlit/secrets.example.toml</code> nije konfiguracija stvarnih naloga; koristite zasebno preuzeti fajl.</p>
+<p>Ako ste aplikaciju već objavili, otvorite <code>Manage app</code> → <code>Settings</code> → <code>Secrets</code>, nalepite konfiguraciju i sačuvajte. Po potrebi izaberite <code>Reboot app</code>.</p>
+<h2 id="section-6">6. Prva prijava i unos</h2>
+<ol>
+<li>Sačekajte instaliranje zavisnosti. Prvo pokretanje može trajati nekoliko minuta.</li>
+<li>Otvorite dobijenu adresu oblika <code><a href="https://vas-naziv.streamlit.app" target="_blank" rel="noopener noreferrer">https://vas-naziv.streamlit.app</a></code>.</li>
+<li>Na vrhu treba da piše da je servis za proveru aktivan.</li>
+<li>Prijavite se kao Stefan ili Milos postojećom lozinkom. Velika i mala slova korisničkog imena nisu bitna.</li>
+<li>Otvorite <code>Uvoz mečeva</code>, izaberite datum prvog dana spiska i nalepite kopiju iz internog programa.</li>
+<li>Kliknite <code>Pregledaj unos</code> i proverite interne šifre, domaćina/gosta, tekući rezultat i poluvreme.</li>
+<li>Izaberite Flashscore, Sofascore ili oba i uključite automatsku proveru.</li>
+<li>Kliknite <code>Uvezi mečeve</code>, zatim otvorite <code>Pregled mečeva</code> i kliknite <code>Proveri sada</code>.</li>
+</ol>
+<p>Mečevi svakog operatera, napomene i istorija odvojeni su prema prijavljenom nalogu. Samo osvežavanje stranice može tražiti novu prijavu; ono samo po sebi ne briše spisak.</p>
+<h2 id="section-7">7. Šta proveriti tokom testa</h2>
+<ul>
+<li>Ručna provera radi preko dugmeta <code>Proveri sada</code>.</li>
+<li>Uključena automatika proverava na 300 sekundi dok je instanca aktivna. Raspored ne zavisi od osvežavanja panela.</li>
+<li>Zatvaranje kartice ili odjava ne gase servis odmah. Ako Cloud uspava ili zaustavi instancu, provere prestaju.</li>
+<li>U <code>Istorija aktivnosti</code> vide se operater, vreme i ručna/automatska provera.</li>
+<li>Različit naziv takmičenja ne sprečava povezivanje istih klubova i termina.</li>
+<li>Nedostupan ili blokiran izvor ostaje neproveren, a ne usaglašen.</li>
+</ul>
+<p>Interni spisak i dalje predstavlja kopirani snimak. Kada se interni rezultat promeni, ponovo nalepite spisak da biste poredili novu vrednost.</p>
+<h2 id="section-8">8. Ograničenja ove testne verzije</h2>
+<p>Streamlit Community Cloud prema svojoj dokumentaciji uspavljuje aplikacije posle 12 sati bez poseta. Ova verzija ne pokušava da spreči uspavljivanje. Automatski rad nije garantovan dok je instanca uspavana ili isključena.</p>
+<p>Podaci su u lokalnom prostoru Cloud instance. Ponovno kreiranje, nova instalacija ili premeštanje instance može obrisati spiskove, istoriju, napomene i sesije. Nalozi se ponovo učitavaju iz Secrets. Važnu istoriju tokom testa preuzmite kao CSV iz panela. Običan restart internog servisa pokušava da sačuva lokalne podatke dok isti prostor postoji.</p>
+<p>Sofascore je u razvojnom okruženju vraćao HTTP 403. Uspešan pristup sa vašeg Streamlit Cloud servera mora se proveriti. Aplikacija ne zaobilazi zaštitu i ne potvrđuje rezultate iz blokiranog izvora.</p>
+<p>Ovo je verzija za trenutne testove. Za stalni operaterski rad i trajno čuvanje podataka koristite zasebni produkcioni servis.</p>
+<h2 id="section-9">9. Najčešći problemi</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Poruka ili simptom</th><th>Postupak</th></tr>
+<tr><td>Nedostaju nalozi</td><td>U Settings → Secrets nalepite ceo zasebno preuzeti cloud-secrets.toml.</td></tr>
+<tr><td>Servis nije pokrenut</td><td>Proverite Secrets, da je ceo ZIP prenet, main file streamlit_app.py i Python 3.12; zatim Reboot app.</td></tr>
+<tr><td>Server za proveru nije dostupan</td><td>Sačekajte nekoliko sekundi da se servis ponovo pokrene. Ako se ponavlja, otvorite Manage app i proverite log.</td></tr>
+<tr><td>Pokušava vezu sa api:8080</td><td>Izabran je stari ulazni fajl. Postavite root streamlit_app.py iz Cloud paketa.</td></tr>
+<tr><td>Pogrešno korisničko ime ili lozinka</td><td>Koristite Stefan ili Milos i ranije dodeljenu lozinku; proverite da ste preuzeli pravu konfiguraciju naloga.</td></tr>
+<tr><td>HTTP 403 kod izvora</td><td>Izvor je odbio zahtev; to nije greška prijave operatera. Proverite drugi izvor ili sačekajte predviđenu pauzu.</td></tr>
+<tr><td>Aplikacija spava</td><td>Otvorite je i kliknite dugme za buđenje. Potom proverite spisak i pokrenite ručnu proveru.</td></tr>
+</tbody></table></div>
+<h2 id="section-10">10. Opciona mapa različitih naziva klubova</h2>
+<p>Nazive takmičenja ne morate mapirati. Ako se razlikuje sam naziv kluba, u Streamlit Secrets možete dodati mapu, na primer:</p>
+<pre><code>TEAM_ALIASES_JSON = &#39;{&quot;teams&quot;:{&quot;redstarbelgrade&quot;:&quot;Crvena Zvezda&quot;}}&#39;</code></pre>
+<p>Ključ je normalizovan naziv na izvoru, vrednost zajednički naziv. Ova skraćena mapa važi za oba izvora. Možete koristiti i postojeći oblik sa zasebnim mapama <code>flash</code> i <code>sofa</code> iz <code>aliases.example.json</code>. Posle izmene Secrets ponovo pokrenite aplikaciju.</p>
+<h2 id="section-11">11. Zvanična dokumentacija</h2>
+<ul>
+<li><a href="https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy" target="_blank" rel="noopener noreferrer">https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy</a></li>
+<li><a href="https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management" target="_blank" rel="noopener noreferrer">https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management</a></li>
+<li><a href="https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app" target="_blank" rel="noopener noreferrer">https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app</a></li>
+</ul><footer>ScoreGuard Streamlit · Uputstvo je deo paketa. Lozinke i tokene ne sadrži. Cloud test radi dok je instanca aktivna; podaci su privremeni.</footer></main></body></html>

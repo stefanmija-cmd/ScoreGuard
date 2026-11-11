@@ -1,0 +1,11 @@
+dist/
+outputs/
+.sites-runtime/
+node_modules/
+secrets/
+.env*
+data/
+__pycache__/
+.pytest_cache/
+*.pyc
+.streamlit/secrets.toml
