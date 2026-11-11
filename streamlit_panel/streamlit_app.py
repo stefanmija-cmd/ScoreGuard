@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 from streamlit_panel.api_client import ApiClient, ApiError
 from streamlit_panel.presentation import BELGRADE, SOURCE_NAMES, STATUS_NAMES, local_time, preview_fingerprint, preview_rows, row_style, table_rows
+from streamlit_panel.team_aliases_ui import render_team_aliases
 
 CLOUD_MODE = os.environ.get("SCOREGUARD_CLOUD") == "1"
 if not CLOUD_MODE:
@@ -70,7 +71,7 @@ with st.sidebar:
     st.title("ScoreGuard")
     st.caption("Streamlit · Operaterski panel")
     st.write("Prijavljen: **" + identity["name"] + "**")
-    page = st.radio("Radni prostor", ["Pregled mečeva", "Uvoz mečeva", "Istorija aktivnosti", "Podešavanja", "Pomoć"], key="page")
+    page = st.radio("Radni prostor", ["Pregled mečeva", "Uvoz mečeva", "Poveži nazive klubova", "Istorija aktivnosti", "Podešavanja", "Pomoć"], key="page")
     st.divider()
     st.caption("Europe/Belgrade · Fudbal")
     if st.button("Odjavi se", use_container_width=True):
@@ -88,6 +89,11 @@ def load_snapshot():
     except ApiError as error:
         handle_error(error)
         st.stop()
+
+
+def open_team_aliases(match):
+    st.session_state["alias_context_match"] = match["match"]
+    st.session_state["page"] = "Poveži nazive klubova"
 
 
 def render_match_details(matches, sources):
@@ -114,6 +120,8 @@ def render_match_details(matches, sources):
                 st.warning("Podaci ovog izvora su zastareli i ne potvrđuju rezultat.")
             if reference.get("url"):
                 st.link_button("Otvori " + SOURCE_NAMES[source], reference["url"])
+        if st.button("Poveži nazive klubova", key="link-clubs-" + selected, on_click=open_team_aliases, args=(match,)):
+            st.rerun(scope="app")
         ack = match.get("ack")
         if ack:
             st.success("Obradu zabeležio " + str(ack.get("name") or ack.get("operator")) + " · " + local_time(ack.get("at"), True))
@@ -289,6 +297,8 @@ if page == "Pregled mečeva":
     monitor_page()
 elif page == "Uvoz mečeva":
     import_page()
+elif page == "Poveži nazive klubova":
+    render_team_aliases(client(), load_snapshot().get("monitor"), CLOUD_MODE, handle_error)
 elif page == "Istorija aktivnosti":
     history_page()
 elif page == "Podešavanja":

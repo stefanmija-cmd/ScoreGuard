@@ -1,9 +1,11 @@
 import {SOURCE_NAMES,matchEvent,eventReference,validateWatch} from './model.mjs';
 import {scrapeFlashscore} from './providers/flashscore.mjs';
 import {scrapeSofascore} from './providers/sofascore.mjs';
+import {compileTeamAliases} from './team-aliases.mjs';
 export function createCollector({fetcher=globalThis.fetch,clock=()=>Date.now(),providers={},aliases={}}={}) {
  const implementations={flash:scrapeFlashscore,sofa:scrapeSofascore,...providers},cooldowns=new Map();
- async function collect(config) {
+ async function collect(config,{teamAliases=[]}={}) {
+  const effectiveAliases=compileTeamAliases(aliases,teamAliases);
   const watch=validateWatch(config),startedAt=new Date(clock()).toISOString(),feeds={},health={};
   const dates=[...new Set(watch.matches.map(m=>m.date||watch.date))];
   await Promise.all(watch.sources.map(async source=>{
@@ -28,10 +30,10 @@ export function createCollector({fetcher=globalThis.fetch,clock=()=>Date.now(),p
    const date=m.date||watch.date,refs={};for(const source of watch.sources){
     const events=feeds[source]?.[date];
     if(!events){refs[source]={state:'unverified',reason:health[source].failures?.find(f=>f.date===date)?.message||health[source].message,checkedAt};continue;}
-    const found=matchEvent(m,events,date,aliases[source]);refs[source]=found.event?eventReference(found.event,checkedAt):{state:'unverified',reason:found.reason,checkedAt};
+    const found=matchEvent(m,events,date,effectiveAliases[source]);refs[source]=found.event?eventReference(found.event,checkedAt):{state:'unverified',reason:found.reason,checkedAt};
    }return {id:m.id,refs};
   });
   return {results,health,startedAt,checkedAt,intervalSeconds:300};
  }
- return {collect,cooldowns};
+ return {collect,cooldowns,configuredTeamAliasCount:Object.values(aliases).reduce((count,source)=>count+Object.keys(source?.teams||{}).length,0)};
 }

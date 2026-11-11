@@ -9,6 +9,7 @@ import {randomBytes} from 'node:crypto';
 import {OperatorAuth} from '../auth/core.mjs';
 import {SessionFileStore} from './auth-store.mjs';
 import {createWebApp} from './web-app.mjs';
+import {TeamAliasStore} from './team-aliases.mjs';
 function authorized(req,token) {const raw=req.headers.authorization||'';return timingSafeEqual(createHash('sha256').update(raw).digest(),createHash('sha256').update('Bearer '+token).digest());}
 const validOperator=s=>typeof s==='string'&&/^[a-zA-Z0-9_.:@-]{1,200}$/.test(s);
 export function createService({monitor,token,webApp=null}) {
@@ -45,11 +46,12 @@ async function main() {
  const secure=origin.protocol==='https:';if(!secure&&!['localhost','127.0.0.1'].includes(origin.hostname))throw Error('Za javno postavljanje potreban je HTTPS PUBLIC_ORIGIN.');
  const auth=new OperatorAuth({accounts,signingKey,secure,sessionStore:sessions});
  let aliases={};if(process.env.ALIASES_FILE)aliases=JSON.parse(await fs.readFile(process.env.ALIASES_FILE,'utf8'));
- const monitor=new Monitor({collector:createCollector({aliases}),store:new FileStore(directory)});await monitor.init();
+ const teamAliases=new TeamAliasStore(directory);await teamAliases.init();
+ const monitor=new Monitor({collector:createCollector({aliases}),store:new FileStore(directory),teamAliases});await monitor.init();
  const html=await fs.readFile(new URL('../dist/client/index.html',import.meta.url),'utf8'),loginHtml=await fs.readFile(new URL('../login.html',import.meta.url),'utf8'),sourceZip=new Uint8Array(await fs.readFile(new URL('../dist/source.zip',import.meta.url))),productionGuide=await fs.readFile(new URL('../PRODUCTION.md',import.meta.url),'utf8'),readme=await fs.readFile(new URL('../README.md',import.meta.url),'utf8');
  const streamlitGuide=await fs.readFile(new URL('../UPUTSTVO-POCETNICI.html',import.meta.url),'utf8');
  const cloudZip=new Uint8Array(await fs.readFile(new URL('../dist/cloud.zip',import.meta.url))),cloudGuide=await fs.readFile(new URL('../UPUTSTVO-CLOUD.html',import.meta.url),'utf8');
- const webApp=createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGuide,readme,streamlitGuide,cloudZip,cloudGuide,publicOrigin:origin.origin,trustProxy:process.env.TRUST_PROXY==='1'});
+ const webApp=createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGuide,readme,teamAliases,streamlitGuide,cloudZip,cloudGuide,publicOrigin:origin.origin,trustProxy:process.env.TRUST_PROXY==='1'});
  const server=createService({monitor,token,webApp});const port=Number(process.env.PORT||8080);server.listen(port,'0.0.0.0',()=>{monitor.start();console.log('ScoreGuard listening on port '+port+'; interval=300s; operator login enabled');});
  server.requestTimeout=20000;server.headersTimeout=10000;
  let stopping=false;async function stop(){if(stopping)return;stopping=true;server.close();await monitor.stop();await sessions.save();process.exit(0)}process.on('SIGTERM',stop);process.on('SIGINT',stop);

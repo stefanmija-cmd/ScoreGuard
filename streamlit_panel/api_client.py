@@ -77,3 +77,15 @@ class ApiClient:
 
     def package(self):
         return self._request("/downloads/ScoreGuard-streamlit-v0.6.zip").content
+
+    def team_aliases(self):
+        return self._request("/api/team-aliases").json()
+
+    def save_team_alias(self, source: str, internal_name: str, source_name: str, confirmed: bool):
+        return self._request("/api/team-aliases", "POST", {"source": source, "internalName": internal_name, "sourceName": source_name, "confirmed": confirmed}).json()
+
+    def remove_team_alias(self, alias_id: str):
+        return self._request("/api/team-aliases", "DELETE", {"id": alias_id}).json()
+
+    def import_team_aliases(self, aliases: list, confirmed: bool):
+        return self._request("/api/team-aliases/import", "POST", {"version": 1, "aliases": aliases, "confirmed": confirmed}).json()

@@ -23,7 +23,7 @@ Novi uvoz zamenjuje tvoj prethodni aktivni spisak. Spisak drugog operatera se ne
 - U prvom poluvremenu završen rezultat poluvremena još nije dostupan. Minuti golova se ne proveravaju.
 - U kopiji iz internog programa **HT označava prvo, a FT drugo poluvreme**. Period utakmice prikazan je i u detaljima meča.
 
-Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova. Različiti nazivi samih klubova mogu zahtevati usklađivanje naziva. Kada postoji više mogućih mečeva, aplikacija ne bira proizvoljno.
+Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova. Različite nazive istog kluba poveži kroz **Poveži nazive klubova**. Kada postoji više mogućih mečeva, aplikacija ne bira proizvoljno.
 
 ## 3. Provera na 5 minuta i osvežavanje pregleda
 
@@ -63,3 +63,15 @@ U **Podešavanjima** možeš promeniti izvore i uključiti ili pauzirati automat
 U **Istoriji aktivnosti** vidiš prethodne ručne i automatske provere i sačuvane napomene. Istoriju provera možeš preuzeti kao CSV.
 
 Na kraju rada klikni **Odjavi se**. Sama odjava i zatvaranje kartice ne pauziraju uključene provere dok aplikacija radi. Ako želiš da zaustaviš automatski nadzor svog spiska, prvo isključi automatiku u **Podešavanjima** i sačuvaj izbor.
+
+## 7. Povezivanje različitih naziva klubova
+
+1. Otvori **Poveži nazive klubova** iz levog menija ili iz detalja meča.
+2. Izaberi klub iz internog spiska ili ručno unesi njegov interni naziv, npr. **Victoria Utd Limbe**.
+3. Izaberi izvor i upiši njegov naziv kluba, npr. **Victoria United** na Flashscore-u.
+4. Potvrdi da su to isti klub i ista selekcija, pa klikni **Sačuvaj povezivanje**.
+5. Vrati se u pregled i klikni **Proveri sada**, ili sačekaj uključenu automatsku proveru.
+
+Povezivanje se čuva za tvoj nalog i važi i za naredne uvoze. Posle dodavanja ili uklanjanja povezivanja stari rezultat provere se poništava, pa je potrebna nova provera. Datum, vreme i redosled domaćina i gosta ostaju obavezni.
+
+U istom ekranu možeš pregledati i ukloniti sačuvane veze. Kroz **Preuzmi povezivanja (JSON)** sačuvaj kopiju, a kroz **Vrati prethodno preuzeta povezivanja** uvezi je na svoj nalog. Ovo je korisno u testnoj verziji ako se lokalni podaci aplikacije izgube. Povezivanja drugog operatera se ne menjaju.

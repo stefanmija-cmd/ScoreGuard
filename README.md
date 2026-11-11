@@ -115,15 +115,17 @@ Ovo je verzija za trenutne testove. Za stalni operaterski rad i trajno čuvanje 
 | HTTP 403 kod izvora | Izvor je odbio zahtev; to nije greška prijave operatera. Proverite drugi izvor ili sačekajte predviđenu pauzu. |
 | Aplikacija spava | Otvorite je i kliknite dugme za buđenje. Potom proverite spisak i pokrenite ručnu proveru. |
 
-## 10. Opciona mapa različitih naziva klubova
+## 10. Povezivanje različitih naziva klubova iz panela
 
-Nazive takmičenja ne morate mapirati. Ako se razlikuje sam naziv kluba, u Streamlit Secrets možete dodati mapu, na primer:
+Otvorite **Poveži nazive klubova** u levom meniju ili kliknite isto dugme u detaljima meča. Izaberite klub iz internog spiska ili unesite njegov naziv ručno, izaberite izvor i upišite naziv sa tog izvora. Potvrdite da je to isti klub i ista selekcija, pa kliknite **Sačuvaj povezivanje**.
 
-```toml
-TEAM_ALIASES_JSON = '{"teams":{"redstarbelgrade":"Crvena Zvezda"}}'
-```
+Primer: interno `Victoria Utd Limbe`, Flashscore `Victoria United`. Za tu vezu više nije potrebno menjati konfiguraciju naloga ili Secrets. Datum, vreme i redosled domaćina i gosta i dalje moraju da se poklapaju.
 
-Ključ je normalizovan naziv na izvoru, vrednost zajednički naziv. Ova skraćena mapa važi za oba izvora. Možete koristiti i postojeći oblik sa zasebnim mapama `flash` i `sofa` iz `aliases.example.json`. Posle izmene Secrets ponovo pokrenite aplikaciju.
+Povezivanja se čuvaju za vaš nalog i koriste i u budućim uvozima. Posle izmene prethodni rezultat provere se poništava: kliknite **Proveri sada** ili sačekajte uključenu automatiku. Drugi operater ima sopstvenu listu povezivanja.
+
+Na ovom ekranu možete ukloniti pogrešnu vezu, preuzeti JSON kopiju ili vratiti prethodno preuzeta povezivanja. U testnoj verziji sačuvajte kopiju pre ponovnog kreiranja aplikacije, jer lokalni podaci mogu nestati. Nalozi, lozinke i spiskovi mečeva nisu deo te JSON kopije.
+
+Ranije dodate mape kroz `TEAM_ALIASES_JSON` ostaju aktivne. Ako postoje, ekran prikazuje obaveštenje; uklanjanje nove veze iz panela ne briše ranija pravila iz tih podešavanja.
 
 ## 11. Zvanična dokumentacija
 

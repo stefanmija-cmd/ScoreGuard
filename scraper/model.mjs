@@ -59,9 +59,10 @@ export function matchEvent(internal,events,date,aliases={}) {
  const teams=String(internal.match||'').split(/\s+[–—-]\s+/);
  if(teams.length!==2)return {reason:'Timovi nisu jednoznačno razdvojeni.'};
  const [home,away]=teams;
- const canonical=s=>normalizeName(aliases.teams?.[normalizeName(s)]||s);
+ const canonical=s=>{const key=normalizeName(s);return normalizeName(Object.hasOwn(aliases.teams||{},key)?aliases.teams[key]:s);};
  const homeKey=canonical(home),awayKey=canonical(away);
  if(!homeKey||!awayKey)return {reason:'Nedostaje naziv domaćina ili gosta.'};
+ if(homeKey===awayKey)return {reason:'Oba tima su povezana sa istim klubom. Proverite sačuvana povezivanja naziva.'};
  // Competition names are display metadata. Club pair, home/away order and kickoff identify the event.
  const candidates=events.filter(e=>Number.isFinite(e.startTimestamp)&&dateKey(e.startTimestamp*1000)===date&&timeKey(e.startTimestamp*1000)===internal.time&&canonical(e.home)===homeKey&&canonical(e.away)===awayKey);
  return candidates.length===1?{event:candidates[0]}:{reason:candidates.length?'Više mogućih mečeva sa istim klubovima, datumom i vremenom; potrebno je ručno uparivanje. Naziv takmičenja ne bira se kao kriterijum.':'Nema tačnog poklapanja domaćina, gosta, datuma i vremena početka. Naziv takmičenja nije uslov za povezivanje.'};

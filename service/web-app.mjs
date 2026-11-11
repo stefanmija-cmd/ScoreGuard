@@ -3,7 +3,7 @@ import {importPreview,monitorPresentation} from '../scraper/import-preview.mjs';
 import {appendZipEntry} from '../auth/zip.mjs';
 import {isPackagePath,isCloudPackagePath,loginDestination,loginPath,isBrowserNavigation} from '../auth/navigation.mjs';
 import {cloudSecrets} from '../auth/cloud-secrets.mjs';
-export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGuide,readme,streamlitGuide=null,cloudGuide=null,cloudZip=null,publicOrigin=null,trustProxy=false}){
+export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGuide,readme,teamAliases=null,streamlitGuide=null,cloudGuide=null,cloudZip=null,publicOrigin=null,trustProxy=false}){
  function send(res,status,body,headers={}){res.writeHead(status,{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin',...headers});res.end(body);}
  const json=(res,status,body,headers={})=>send(res,status,JSON.stringify(body),{'Content-Type':'application/json; charset=utf-8',...headers});
  function sameOrigin(req){const expected=publicOrigin||(auth.secure?'https://':'http://')+req.headers.host;return req.headers.origin===expected;}
@@ -26,6 +26,19 @@ export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGu
    if(req.headers['x-scoreguard-operator']&&req.headers['x-scoreguard-operator']!==user.id){json(res,409,{code:'ACCOUNT_CHANGED',error:'Aktivan nalog je promenjen u drugoj kartici. Osvežite stranicu.'});return true;}
    if(req.method!=='GET'&&!sameOrigin(req)){json(res,403,{error:'Nedozvoljen zahtev.'});return true;}
    try{
+    if(url.pathname==='/api/team-aliases'||url.pathname==='/api/team-aliases/import'){
+     if(!teamAliases){json(res,503,{error:'Povezivanje klubova nije dostupno. Ažurirajte servis.'});return true;}
+     if(req.method==='GET'&&url.pathname==='/api/team-aliases'){json(res,200,{aliases:teamAliases.list(user.id),events:teamAliases.history(user.id),limit:teamAliases.limit,configuredCount:monitor.collector.configuredTeamAliasCount||0});return true;}
+     if(req.method==='POST'){
+      const body=await readBody(req,url.pathname.endsWith('/import')?1024*1024:4096);let result;
+      if(url.pathname.endsWith('/import')){if(body.version!==1||!Array.isArray(body.aliases))throw Error('Datoteka mora biti prethodno izvezena lista povezivanja.');result=await teamAliases.addMany(user.id,body.aliases.map(link=>({...link,confirmed:body.confirmed===true})),user.name);}
+      else result=await teamAliases.add(user.id,body,user.name);
+      if(result.changed)await monitor.matchingChanged(user.id);
+      json(res,200,{...result,aliases:teamAliases.list(user.id)});return true;
+     }
+     if(req.method==='DELETE'&&url.pathname==='/api/team-aliases'){const body=await readBody(req,4096);const result=await teamAliases.remove(user.id,body.id,user.name);await monitor.matchingChanged(user.id);json(res,200,{...result,aliases:teamAliases.list(user.id)});return true;}
+     json(res,405,{error:'Nedozvoljen metod.'});return true;
+    }
     if(url.pathname==='/api/auth/logout'&&req.method==='POST'){json(res,200,{ok:true},{'Set-Cookie':await auth.logout(req.headers.cookie)});return true;}
     if(url.pathname==='/api/monitor'&&req.method==='GET'){json(res,200,{monitor:monitor.snapshot(user.id),view:monitorPresentation(monitor.snapshot(user.id)),background:true});return true;}
     if(url.pathname==='/api/import/preview'&&req.method==='POST'){const body=await readBody(req);json(res,200,importPreview(body));return true;}
@@ -34,7 +47,7 @@ export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGu
     if(url.pathname==='/api/watch'&&req.method==='PUT'){const raw=await readBody(req),watch=validateWatch(raw);json(res,200,{monitor:await monitor.configure(user.id,watch,{enabled:raw.enabled!==false}),background:true});return true;}
     if(url.pathname==='/api/compare'&&req.method==='POST'){const raw=await readBody(req),watch=validateWatch(raw);const snapshot=await monitor.configure(user.id,watch,{enabled:raw.enabled!==false});json(res,200,{...await monitor.check(user.id,{trigger:raw.trigger==='scheduled'?'scheduled':'manual',revision:snapshot.revision}),background:true});return true;}
     json(res,404,{error:'Nepoznata API putanja.'});
-   }catch(e){json(res,400,{error:e.message||'Zahtev nije izvršen.'});}return true;
+   }catch(e){json(res,[404,409].includes(e.status)?e.status:400,{error:e.message||'Zahtev nije izvršen.'});}return true;
   }
   if(req.method==='GET'&&(isCloudPackagePath(url.pathname)||url.pathname==='/downloads/cloud-secrets.toml')){
    if(user.role!=='admin'){json(res,403,{error:'Cloud paket i konfiguraciju preuzima administrator.'});return true;}

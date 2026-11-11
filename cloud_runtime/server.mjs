@@ -8,6 +8,7 @@ import {FileStore,Monitor} from '../service/monitor.mjs';
 import {createCollector} from '../scraper/collector.mjs';
 import {createWebApp} from '../service/web-app.mjs';
 import {createService} from '../service/server.mjs';
+import {TeamAliasStore} from '../service/team-aliases.mjs';
 
 export async function startCloudService({directory,accounts,aliases={},collector=createCollector({aliases}),parentPid=null}){
  await fs.mkdir(directory,{recursive:true,mode:0o700});
@@ -15,9 +16,10 @@ export async function startCloudService({directory,accounts,aliases={},collector
  try{signingKey=await fs.readFile(keyPath,'utf8')}catch(e){if(e.code!=='ENOENT')throw e;signingKey=randomBytes(48).toString('base64url');await fs.writeFile(keyPath,signingKey,{mode:0o600,flag:'wx'});}
  const sessions=new SessionFileStore(directory);await sessions.init();
  const auth=new OperatorAuth({accounts,signingKey,secure:false,sessionStore:sessions});
- const monitor=new Monitor({collector,store:new FileStore(directory)});await monitor.init();
+ const teamAliases=new TeamAliasStore(directory);await teamAliases.init();
+ const monitor=new Monitor({collector,store:new FileStore(directory),teamAliases});await monitor.init();
  const origin='http://localhost';
- const webApp=createWebApp({monitor,auth,html:'',loginHtml:'',sourceZip:null,productionGuide:'Streamlit Cloud test',readme:'Streamlit Cloud test',publicOrigin:origin});
+ const webApp=createWebApp({monitor,auth,teamAliases,html:'',loginHtml:'',sourceZip:null,productionGuide:'Streamlit Cloud test',readme:'Streamlit Cloud test',publicOrigin:origin});
  // The API is reachable only inside this Cloud instance. It has no public port.
  // Requests are authenticated with each operator's own session cookie.
  const server=createService({monitor,token:randomBytes(32).toString('hex'),webApp});
@@ -26,7 +28,7 @@ export async function startCloudService({directory,accounts,aliases={},collector
  monitor.start();let closing=false,parentTimer;
  async function close(){if(closing)return;closing=true;clearInterval(parentTimer);const stopped=new Promise(resolve=>server.close(resolve));await monitor.stop();await sessions.save();await stopped;}
  if(parentPid)parentTimer=setInterval(()=>{if(process.ppid!==parentPid)close().then(()=>process.exit(0));},3000).unref();
- return {server,monitor,auth,origin,baseUrl:'http://127.0.0.1:'+server.address().port,close};
+ return {server,monitor,auth,teamAliases,origin,baseUrl:'http://127.0.0.1:'+server.address().port,close};
 }
 
 async function main(){

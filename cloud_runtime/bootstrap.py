@@ -2,6 +2,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from pathlib import Path
 import threading
 import streamlit as st
 from cloud_runtime.runtime import CloudRuntime, CloudRuntimeError, account_config
@@ -9,6 +10,18 @@ from cloud_runtime.runtime import CloudRuntime, CloudRuntimeError, account_confi
 _lock = threading.Lock()
 _active = None
 _active_key = None
+
+
+def service_revision():
+    root = Path(__file__).resolve().parents[1]
+    digest = hashlib.sha256()
+    files = [root / "cloud_runtime/server.mjs"]
+    for folder in ("service", "scraper", "auth"):
+        files.extend((root / folder).rglob("*.mjs"))
+    for path in sorted(files):
+        digest.update(str(path.relative_to(root)).encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def get_runtime(accounts_json, aliases_json="{}"):
@@ -20,7 +33,7 @@ def get_runtime(accounts_json, aliases_json="{}"):
         except (ValueError, TypeError):
             raise CloudRuntimeError("TEAM_ALIASES_JSON mora biti ispravan JSON sa mapom teams.") from None
     directory = os.environ.get("SCOREGUARD_CLOUD_DATA_DIR")
-    key = hashlib.sha256((accounts_json + "|" + aliases_json + "|" + str(directory)).encode()).hexdigest()
+    key = hashlib.sha256((accounts_json + "|" + aliases_json + "|" + str(directory) + "|" + service_revision()).encode()).hexdigest()
     with _lock:
         if _active_key != key or _active is None or _active.stopped.is_set():
             if _active:
