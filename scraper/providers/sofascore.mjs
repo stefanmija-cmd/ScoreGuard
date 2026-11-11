@@ -19,14 +19,14 @@ export async function scrapeSofascore({date,now=Date.now(),fetcher,fetchTextImpl
  // The schedule is indexed by UTC day. Fetch both UTC dates intersecting a Belgrade calendar day.
  const days=[shiftDate(date,-1),date];const items=[];let latestError=null;
  for (const day of days) {
-  try { const {text}=await fetchTextImpl('https://www.sofascore.com/api/v1/sport/football/scheduled-events/'+day,{fetcher,headers:{Accept:'application/json'}});let data;try{data=JSON.parse(text)}catch{throw new SourceError('FORMAT_CHANGED','Sofascore je vratio neprepoznatljiv format.')}items.push(...parseSofascore(data)); }
+  try { const response=await fetchTextImpl('https://www.sofascore.com/api/v1/sport/football/scheduled-events/'+day,{fetcher,headers:{Accept:'application/json'}}),{text}=response;let data;try{data=JSON.parse(text)}catch{throw new SourceError('FORMAT_CHANGED','Sofascore je vratio neprepoznatljiv format.')}items.push(...parseSofascore(data).map(event=>({...event,sourceAgeMs:response.sourceAgeMs||0}))); }
   catch(error) { if (['BLOCKED','RATE_LIMIT'].includes(error.code)) throw error;latestError=error; }
  }
  if (date===dateKey(now) && !latestError) {
-  try { const {text}=await fetchTextImpl('https://www.sofascore.com/api/v1/sport/football/events/live',{fetcher,headers:{Accept:'application/json'}});items.push(...parseSofascore(JSON.parse(text))); }
+  try { const response=await fetchTextImpl('https://www.sofascore.com/api/v1/sport/football/events/live',{fetcher,headers:{Accept:'application/json'}}),{text}=response;items.push(...parseSofascore(JSON.parse(text)).map(event=>({...event,sourceAgeMs:response.sourceAgeMs||0}))); }
   catch(error) { if (['BLOCKED','RATE_LIMIT'].includes(error.code)) throw error; /* Schedule feed still contains live scores; a live-only request is supplementary. */ }
  }
  if (latestError) throw latestError;
  const dedup=new Map();for(const e of items)if(dateKey(e.startTimestamp*1000)===date)dedup.set(e.id,e);
- return [...dedup.values()];
+ const selected=[...dedup.values()];return Object.defineProperty(selected,'sourceAgeMs',{value:selected.length?Math.max(...selected.map(e=>e.sourceAgeMs||0)):0});
 }

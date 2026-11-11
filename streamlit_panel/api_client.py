@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 import requests
+from urllib.parse import urlencode
 
 
 class ApiError(Exception):
@@ -66,8 +67,8 @@ class ApiClient:
     def preview(self, text: str, date: str, format_name: str = "auto"):
         return self._request("/api/import/preview", "POST", {"text": text, "date": date, "format": format_name}).json()
 
-    def configure(self, watch: dict, enabled: bool):
-        return self._request("/api/watch", "PUT", {**watch, "enabled": enabled}).json()
+    def configure(self, watch: dict, enabled: bool, imported: bool = False):
+        return self._request("/api/watch", "PUT", {**watch, "enabled": enabled, "imported": imported}).json()
 
     def check(self, watch: dict, enabled: bool):
         return self._request("/api/compare", "POST", {**watch, "enabled": enabled, "trigger": "manual"}).json()
@@ -81,11 +82,29 @@ class ApiClient:
     def team_aliases(self):
         return self._request("/api/team-aliases").json()
 
-    def save_team_alias(self, source: str, internal_name: str, source_name: str, confirmed: bool):
-        return self._request("/api/team-aliases", "POST", {"source": source, "internalName": internal_name, "sourceName": source_name, "confirmed": confirmed}).json()
+    def save_team_alias(self, source: str, internal_name: str, source_name: str, confirmed: bool, scope: str = "own"):
+        return self._request("/api/team-aliases", "POST", {"source": source, "internalName": internal_name, "sourceName": source_name, "confirmed": confirmed, "scope": scope}).json()
 
-    def remove_team_alias(self, alias_id: str):
-        return self._request("/api/team-aliases", "DELETE", {"id": alias_id}).json()
+    def remove_team_alias(self, alias_id: str, scope: str = "own"):
+        return self._request("/api/team-aliases", "DELETE", {"id": alias_id, "scope": scope}).json()
 
     def import_team_aliases(self, aliases: list, confirmed: bool):
         return self._request("/api/team-aliases/import", "POST", {"version": 1, "aliases": aliases, "confirmed": confirmed}).json()
+
+    def confirm_match(self, match_id: str, source: str, event_id: str, scope: str = "own"):
+        return self._request("/api/matching/confirm", "POST", {"matchId": match_id, "source": source, "eventId": event_id, "confirmed": True, "scope": scope}).json()
+
+    def history(self, match_id: str):
+        return self._request("/api/history?" + urlencode({"matchId": match_id})).json()
+
+    def cases(self, offset: int = 0, resolved: bool = False, owner: str = "", query: str = ""):
+        return self._request("/api/cases?" + urlencode({"offset": offset, "resolved": "1" if resolved else "0", "owner": owner, "q": query})).json()
+
+    def case_action(self, case_id: str, action: str, version: int, note: str = ""):
+        return self._request("/api/cases/action", "POST", {"id": case_id, "action": action, "version": version, "note": note}).json()
+
+    def backup(self):
+        return self._request("/api/backup").json()
+
+    def restore_backup(self, backup: dict, confirmed: bool):
+        return self._request("/api/backup/restore", "POST", {"backup": backup, "confirmed": confirmed}).json()

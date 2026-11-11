@@ -27,13 +27,13 @@ export function parseFlashscore(text) {
 export async function scrapeFlashscore({date,now=Date.now(),fetcher,fetchTextImpl=fetchText,feedBase='https://global.flashscore.ninja/2/x/feed',feedSign='SW9D1eZo'}={}) {
  const offset=Math.round((Date.parse(date+'T12:00:00Z')-Date.parse(dateKey(now)+'T12:00:00Z'))/86400000);
  if (offset < -7 || offset > 1) throw new SourceError('DATE_RANGE','Flashscore dnevni feed podržava poslednjih 7 dana i naredni dan.');
- const events=[];
+ const events=[];let sourceAgeMs=0;
  // Flashscore's rolling day boundary differs from the Belgrade calendar. Read adjacent feed windows and filter actual kickoff dates.
  for (const day of [offset-1,offset]) {
   const url=feedBase.replace(/\/$/,'')+'/f_1_'+day+'_3_en_1';
-  const {text}=await fetchTextImpl(url,{fetcher,headers:{'x-fsign':feedSign}});
-  events.push(...parseFlashscore(text));
+  const response=await fetchTextImpl(url,{fetcher,headers:{'x-fsign':feedSign}}),{text}=response;sourceAgeMs=Math.max(sourceAgeMs,response.sourceAgeMs||0);
+  events.push(...parseFlashscore(text).map(event=>({...event,sourceAgeMs:response.sourceAgeMs||0})));
  }
  const dedup=new Map();for (const event of events) if(dateKey(event.startTimestamp*1000)===date)dedup.set(event.id,event);
- return [...dedup.values()];
+ const selected=[...dedup.values()];return Object.defineProperty(selected,'sourceAgeMs',{value:selected.length?Math.max(...selected.map(e=>e.sourceAgeMs)):sourceAgeMs});
 }

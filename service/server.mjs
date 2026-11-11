@@ -3,6 +3,7 @@ import {timingSafeEqual,createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {createCollector} from '../scraper/collector.mjs';
+import {OperationsStore} from './operations.mjs';
 import {FileStore,Monitor} from './monitor.mjs';
 import path from 'node:path';
 import {randomBytes} from 'node:crypto';
@@ -25,7 +26,7 @@ export function createService({monitor,token,webApp=null}) {
    if(req.method==='GET'&&url.pathname==='/v1/state')return send(200,{monitor:monitor.snapshot(operator)});
    if(req.method==='DELETE'&&url.pathname==='/v1/watch')return send(200,{monitor:await monitor.pause(operator)});
    if(req.method==='PUT'&&url.pathname==='/v1/watch'){
-    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>256000){send(413,{error:'Spisak je prevelik.'});req.destroy();return}chunks.push(chunk)}
+    let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>2*1024*1024){send(413,{error:'Spisak je prevelik.'});req.destroy();return}chunks.push(chunk)}
     let body;try{body=JSON.parse(Buffer.concat(chunks).toString())}catch{return send(400,{error:'Neispravan JSON.'})}
     const result=await monitor.configure(operator,body,{enabled:body.enabled!==false});return send(200,{monitor:result});
    }
@@ -47,7 +48,8 @@ async function main() {
  const auth=new OperatorAuth({accounts,signingKey,secure,sessionStore:sessions});
  let aliases={};if(process.env.ALIASES_FILE)aliases=JSON.parse(await fs.readFile(process.env.ALIASES_FILE,'utf8'));
  const teamAliases=new TeamAliasStore(directory);await teamAliases.init();
- const monitor=new Monitor({collector:createCollector({aliases}),store:new FileStore(directory),teamAliases});await monitor.init();
+ const operations=new OperationsStore(directory);await operations.init();
+ const monitor=new Monitor({collector:createCollector({aliases,apiFootball:{key:process.env.APIFOOTBALL_KEY||'',dailyLimit:process.env.APIFOOTBALL_DAILY_LIMIT||90}}),store:new FileStore(directory),teamAliases,operations});await monitor.init();
  const html=await fs.readFile(new URL('../dist/client/index.html',import.meta.url),'utf8'),loginHtml=await fs.readFile(new URL('../login.html',import.meta.url),'utf8'),sourceZip=new Uint8Array(await fs.readFile(new URL('../dist/source.zip',import.meta.url))),productionGuide=await fs.readFile(new URL('../PRODUCTION.md',import.meta.url),'utf8'),readme=await fs.readFile(new URL('../README.md',import.meta.url),'utf8');
  const streamlitGuide=await fs.readFile(new URL('../UPUTSTVO-POCETNICI.html',import.meta.url),'utf8');
  const cloudZip=new Uint8Array(await fs.readFile(new URL('../dist/cloud.zip',import.meta.url))),cloudGuide=await fs.readFile(new URL('../UPUTSTVO-CLOUD.html',import.meta.url),'utf8');

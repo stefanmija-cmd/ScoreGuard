@@ -1,9 +1,9 @@
 export class SourceError extends Error {
  constructor(code,message,details={}) { super(message);this.name='SourceError';this.code=code;Object.assign(this,details); }
 }
-export async function fetchText(url,{fetcher=globalThis.fetch,headers={},timeoutMs=12000,maxBytes=8*1024*1024}={}) {
+export async function fetchText(url,{fetcher=globalThis.fetch,headers={},timeoutMs=12000,maxBytes=8*1024*1024,redirect='follow'}={}) {
  let response;
- try { response=await fetcher(url,{headers:{Accept:'*/*',...headers},signal:AbortSignal.timeout(timeoutMs),redirect:'follow'}); }
+ try { response=await fetcher(url,{headers:{Accept:'*/*',...headers},signal:AbortSignal.timeout(timeoutMs),redirect}); }
  catch(error) { throw new SourceError(error.name==='TimeoutError'||error.name==='AbortError'?'TIMEOUT':'NETWORK','Izvor nije odgovorio u predviđenom roku ili veza nije dostupna.'); }
  if (!response.ok) {
   const seconds=Number(response.headers.get('retry-after'));
@@ -19,5 +19,5 @@ export async function fetchText(url,{fetcher=globalThis.fetch,headers={},timeout
  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
  const text=new TextDecoder().decode(bytes);
  if (/captcha|challenge-platform|challenge-form|cloudflare.*challenge/i.test(text.slice(0,16000)) && /<html|<!doctype/i.test(text.slice(0,1000))) throw new SourceError('BLOCKED','Izvor zahteva CAPTCHA ili zaštitnu proveru.');
- return {text,headers:response.headers};
+ return {text,headers:response.headers,sourceAgeMs:Math.max(0,Number(response.headers.get('age'))||0)*1000};
 }

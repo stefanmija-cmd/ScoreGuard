@@ -50,8 +50,8 @@ class CloudRuntime:
             if not isinstance(aliases, dict):
                 raise ValueError
             if "teams" in aliases:
-                aliases = {source: {"teams": aliases["teams"]} for source in ("flash", "sofa")}
-            for source in ("flash", "sofa"):
+                aliases = {source: {"teams": aliases["teams"]} for source in ("flash", "sofa", "api")}
+            for source in ("flash", "sofa", "api"):
                 teams = aliases.get(source, {}).get("teams", {})
                 if not isinstance(teams, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in teams.items()):
                     raise ValueError
@@ -98,10 +98,10 @@ class CloudRuntime:
             log_path.unlink()
         self._log = open(log_path, "ab")
         log_path.chmod(0o600)
-        self.process = subprocess.Popen([node_binary(), str(self.project / "cloud_runtime/server.mjs")],
+        self.process = subprocess.Popen([node_binary(), "--max-old-space-size=256", str(self.project / "cloud_runtime/server.mjs")],
                                         cwd=self.project, env=environment, stdin=subprocess.DEVNULL,
                                         stdout=self._log, stderr=subprocess.STDOUT)
-        deadline = time.monotonic() + 15
+        deadline = time.monotonic() + (45 if environment.get("SCOREGUARD_STORAGE_URL") else 15)
         session = requests.Session()
         session.trust_env = False  # Only this loopback health request bypasses outbound proxies.
         try:
@@ -158,7 +158,8 @@ class CloudRuntime:
     def status(self):
         with self.lock:
             return {"running": bool(self.process and self.process.poll() is None and not self.error),
-                    "startedAt": self.started_at, "restarts": self.restarts, "error": self.error}
+                    "startedAt": self.started_at, "restarts": self.restarts, "error": self.error,
+                    "durableStorage": bool(os.environ.get("SCOREGUARD_STORAGE_URL") and os.environ.get("SCOREGUARD_STORAGE_KEY"))}
 
     def close(self):
         self.stopped.set()

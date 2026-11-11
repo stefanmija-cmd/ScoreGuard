@@ -5,8 +5,9 @@ import os
 import pandas as pd
 import streamlit as st
 from streamlit_panel.api_client import ApiClient, ApiError
-from streamlit_panel.presentation import BELGRADE, SOURCE_NAMES, STATUS_NAMES, local_time, preview_fingerprint, preview_rows, row_style, table_rows
+from streamlit_panel.presentation import BELGRADE, SOURCE_NAMES, STATUS_NAMES, input_age, local_time, preview_fingerprint, preview_rows, row_style, table_rows
 from streamlit_panel.team_aliases_ui import render_team_aliases
+from streamlit_panel.operations_ui import alarm_wav, render_sound, render_workflow, render_suggestions, render_timeline, render_cases, render_backup
 
 CLOUD_MODE = os.environ.get("SCOREGUARD_CLOUD") == "1"
 if not CLOUD_MODE:
@@ -71,7 +72,11 @@ with st.sidebar:
     st.title("ScoreGuard")
     st.caption("Streamlit · Operaterski panel")
     st.write("Prijavljen: **" + identity["name"] + "**")
-    page = st.radio("Radni prostor", ["Pregled mečeva", "Uvoz mečeva", "Poveži nazive klubova", "Istorija aktivnosti", "Podešavanja", "Pomoć"], key="page")
+    page = st.radio("Radni prostor", ["Pregled mečeva", "Zajednička neslaganja", "Uvoz mečeva", "Poveži nazive klubova", "Istorija aktivnosti", "Podešavanja", "Pomoć"], key="page")
+    st.checkbox("Zvučna upozorenja", key="sound_enabled")
+    if st.button("Testiraj zvuk", key="test_sound"):
+        st.audio(alarm_wav(), format="audio/wav", autoplay=True)
+    st.caption("Ako pregledač blokira zvuk, pokreni testni ton u prikazanom plejeru. Alarm se javlja za nova ili promenjena neslaganja.")
     st.divider()
     st.caption("Europe/Belgrade · Fudbal")
     if st.button("Odjavi se", use_container_width=True):
@@ -96,7 +101,7 @@ def open_team_aliases(match):
     st.session_state["page"] = "Poveži nazive klubova"
 
 
-def render_match_details(matches, sources):
+def render_match_details(matches, sources, snapshot=None, operations_enabled=False):
     if not matches:
         return
     with st.expander("Detalji meča i obrada neslaganja"):
@@ -109,13 +114,16 @@ def render_match_details(matches, sources):
             show_reason(reason)
         st.write("**Interni rezultat:** " + (match.get("score") or "—") + " · **Poluvreme:** " + (match.get("ht") or "—"))
         st.caption("Interna šifra: " + str(match.get("internalId", "—")) + " · Datum: " + str(match.get("date", "—")))
+        st.caption("Interni spisak uvezen: " + local_time(match.get("importedAt"), True) + " · " + input_age(match.get("importedAt")))
         native = match.get("native") or {}
         if native:
             st.caption("Period: " + str(native.get("phase") or "—") + " · Oznaka: " + str(native.get("market") or "—") + " · Minut gola: " + str(native.get("minute") or "—") + " (ne proverava se)")
         for source in sources:
             reference = match.get("refs", {}).get(source) or {}
             st.write("**" + SOURCE_NAMES[source] + ":** " + (reference.get("score") or "—") + " · poluvreme " + (reference.get("ht") or "—"))
-            st.caption(str(reference.get("phaseLabel") or "Nije provereno") + " · preuzeto " + local_time(reference.get("checkedAt"), True))
+            st.caption(str(reference.get("phaseLabel") or "Nije provereno") + " · preuzeto " + local_time(reference.get("fetchedAt") or reference.get("checkedAt"), True))
+            if reference.get("sourceAgeMs"):
+                st.caption("Odgovor izvora je pri preuzimanju bio star " + str(int(reference["sourceAgeMs"] // 1000)) + " sekundi. Starost se računa i tokom zajedničkog korišćenja podataka.")
             if reference.get("sourceHome") and reference.get("sourceAway"):
                 st.caption("Uparen meč: " + reference["sourceHome"] + " – " + reference["sourceAway"] + " · Takmičenje izvora: " + (reference.get("sourceLeague") or "—"))
             if reference.get("reason"):
@@ -124,6 +132,10 @@ def render_match_details(matches, sources):
                 st.warning("Podaci ovog izvora su zastareli i ne potvrđuju rezultat.")
             if reference.get("url"):
                 st.link_button("Otvori " + SOURCE_NAMES[source], reference["url"])
+        if operations_enabled:
+            render_suggestions(client(), match, sources, snapshot, handle_error)
+            render_workflow(client(), match.get("workflow"), handle_error)
+            render_timeline(client(), selected, handle_error)
         if st.button("Poveži nazive klubova", key="link-clubs-" + selected, on_click=open_team_aliases, args=(match,)):
             st.rerun(scope="app")
         ack = match.get("ack")
@@ -147,11 +159,16 @@ def monitor_page():
     snapshot = data.get("monitor")
     st.title("Svaki rezultat. Pod kontrolom.")
     st.caption("Povezivanje po klubovima, datumu i vremenu početka. Provera na 5 minuta; prikaz se osvežava na 15 sekundi.")
+    if st.session_state.get("operation_notice"):
+        st.success(st.session_state.pop("operation_notice"))
+    if data.get("storage", {}).get("state") not in (None, "ready"):
+        st.error("Zapisivanje podataka nije potvrđeno. Proveri bazu u Podešavanjima pre obrade slučaja.")
     if not snapshot:
         st.info("Još nema unetih mečeva. Otvorite „Uvoz mečeva“ u levom meniju.")
         return
     view = data.get("view") or {"counts": {}, "matches": []}
     counts = view["counts"]
+    render_sound(view["matches"])
     for column, (key, label) in zip(st.columns(4), [("all", "Ukupno mečeva"), ("mismatch", "Neslaganja"), ("match", "Usaglašeno"), ("unverified", "Nije provereno")]):
         column.metric(label, counts.get(key, 0))
     left, right = st.columns([3, 1])
@@ -172,6 +189,7 @@ def monitor_page():
                 st.rerun()
             except ApiError as error:
                 handle_error(error)
+    st.caption("Operateri koriste zajednički preuzete podatke. Ručni zahtevi u razmaku do 15 sekundi dele poslednje preuzimanje; njegovo vreme je u detaljima meča.")
     for source, health in (last.get("health") or {}).items():
         if health.get("state") in {"unavailable", "partial"}:
             st.warning(health.get("message", SOURCE_NAMES[source] + " nije dostupan."))
@@ -183,10 +201,17 @@ def monitor_page():
     wanted = {"Neslaganja": "mismatch", "Nije provereno": "unverified", "Usaglašeno": "match"}.get(selected_filter)
     matches = [m for m in view["matches"] if (not wanted or m["comparisonStatus"] == wanted) and (not query or query.casefold() in (m["match"] + " " + m["league"] + " " + str(m.get("internalId", ""))).casefold())]
     sources = snapshot["watch"]["sources"]
-    rows = table_rows(matches, sources)
+    matches = sorted(matches, key=lambda match: (match.get("priority", 3), match.get("date", ""), match["time"]))
+    pages = max(1, (len(matches) + 99) // 100)
+    if st.session_state.get("monitor_page_number", 1) > pages:
+        st.session_state["monitor_page_number"] = 1
+    current_page = int(st.number_input("Strana pregleda", min_value=1, max_value=pages, value=1, step=1, key="monitor_page_number"))
+    shown = matches[(current_page - 1) * 100:current_page * 100]
+    st.caption("Prikaz do 100 mečeva po strani · " + str(len(matches)) + " za izabrane filtere. Provera obuhvata ceo spisak.")
+    rows = table_rows(shown, sources)
     if rows:
         st.dataframe(pd.DataFrame(rows).style.apply(row_style, axis=1), hide_index=True, use_container_width=True)
-        render_match_details(matches, sources)
+        render_match_details(shown, sources, snapshot, bool(data.get("operations")))
     else:
         st.info("Nema mečeva za izabrane filtere.")
     st.caption("Crveno: neslaganje · zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci. Oznaka obrade ne menja rezultat.")
@@ -198,6 +223,7 @@ def import_page():
     watch = snapshot.get("watch") or {}
     st.title("Uvoz iz internog programa")
     st.write("Kopirajte ceo spisak i nalepite ga ispod. Format prepoznajemo automatski.")
+    st.caption("Do 1.000 utakmica po spisku. Internom programu se ne pristupa automatski.")
     c1, c2 = st.columns(2)
     with c1:
         base_date = st.date_input("Datum prvog dana spiska", value=datetime.now(BELGRADE).date(), key="import_date")
@@ -226,14 +252,14 @@ def import_page():
         if result.get("rows") and not result.get("errors"):
             dates = sorted({row.get("date", base_date.isoformat()) for row in result["rows"]})
             st.caption("Uvoz: " + str(len(result["rows"])) + " mečeva · datumi: " + ", ".join(dates))
-            options = [SOURCE_NAMES[source] for source in watch.get("sources", ["flash", "sofa"])]
+            options = [SOURCE_NAMES[source] for source in watch.get("sources", ["flash"])]
             chosen = st.multiselect("Izvori za poređenje", list(SOURCE_NAMES.values()), default=options, key="import_sources")
             enabled = st.checkbox("Proveravaj automatski na svakih 5 minuta", value=snapshot.get("enabled", True), key="import_enabled")
             st.info("Novi uvoz zamenjuje vaš aktivni spisak. Spisak drugog operatera se ne menja.")
             if st.button("Uvezi mečeve", disabled=not chosen, type="primary"):
                 sources = [key for key, label in SOURCE_NAMES.items() if label in chosen]
                 try:
-                    client().configure({"date": base_date.isoformat(), "sources": sources, "matches": result["rows"]}, enabled)
+                    client().configure({"date": base_date.isoformat(), "sources": sources, "matches": result["rows"]}, enabled, imported=True)
                     st.session_state.pop("preview", None)
                     st.success("Mečevi su sačuvani. Otvorite „Pregled mečeva“ u levom meniju.")
                 except ApiError as error:
@@ -265,7 +291,8 @@ def history_page():
 
 
 def settings_page():
-    snapshot = load_snapshot().get("monitor")
+    data = load_snapshot()
+    snapshot = data.get("monitor")
     st.title("Podešavanja provera")
     if snapshot:
         watch = snapshot["watch"]
@@ -285,6 +312,10 @@ def settings_page():
         st.info("Prvo uvezite mečeve. Izvore i automatiku možete izabrati tokom uvoza.")
     st.info("Zatvaranje kartice i odjava ne pauziraju uključen nadzor dok je Cloud instanca aktivna. Uspavljivanje ili gašenje instance prekida provere." if CLOUD_MODE else "Zatvaranje kartice i odjava ne pauziraju uključen serverski nadzor. Isključite automatiku ovde ako želite da zaustavite provere.")
     st.warning("Sofascore je tokom razvoja vraćao HTTP 403. Streamlit ne uklanja zaštitu izvora; nedostupni rezultati ostaju neprovereni.")
+    if not data.get("sourceConfiguration", {}).get("api"):
+        st.info("API-Football je dodatni izvor koji zahteva ključ dobavljača. Dok nije podešen, za test izaberi Flashscore. Uputstvo za administratora je u CLOUD-START.md fajlu.")
+    if data.get("operations"):
+        render_backup(client(), data.get("storage", {}), handle_error)
     if identity.get("role") == "admin" and not CLOUD_MODE:
         st.divider()
         st.subheader("Paket za postavljanje")
@@ -299,6 +330,13 @@ def settings_page():
 
 if page == "Pregled mečeva":
     monitor_page()
+elif page == "Zajednička neslaganja":
+    @st.fragment(run_every="15s")
+    def shared_cases_page():
+        if st.session_state.get("operation_notice"):
+            st.success(st.session_state.pop("operation_notice"))
+        render_cases(client(), handle_error)
+    shared_cases_page()
 elif page == "Uvoz mečeva":
     import_page()
 elif page == "Poveži nazive klubova":

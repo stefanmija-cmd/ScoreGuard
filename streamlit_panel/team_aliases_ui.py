@@ -6,12 +6,12 @@ import pandas as pd
 from streamlit_panel.api_client import ApiError
 from streamlit_panel.presentation import local_time
 
-ALIAS_SOURCE_NAMES = {"flash": "Flashscore", "sofa": "Sofascore", "all": "Oba izvora"}
+ALIAS_SOURCE_NAMES = {"flash": "Flashscore", "sofa": "Sofascore", "api": "API-Football", "all": "Svi izvori"}
 
 
 def render_team_aliases(api, snapshot, cloud_mode, handle_error):
     st.title("Poveži nazive klubova")
-    st.caption("Sačuvaj različite nazive za isti klub i istu selekciju. Povezivanja važe za tvoj nalog i koriste se u narednim proverama.")
+    st.caption("Sačuvaj različite nazive za isti klub i istu selekciju. Lična povezivanja važe za tvoj nalog; zajednička povezivanja administratora koriste svi operateri.")
     try:
         data = api.team_aliases()
     except ApiError as error:
@@ -51,12 +51,13 @@ def render_team_aliases(api, snapshot, cloud_mode, handle_error):
         with right:
             source_name = st.text_input("Naziv na izabranom izvoru", max_chars=150, placeholder="Victoria United", key="alias_source_name")
         confirmed = st.checkbox("Potvrđujem da oba naziva označavaju isti klub i istu selekciju.", key="alias_confirmed")
+        shared = st.checkbox("Sačuvaj za sve operatere", key="alias_shared") if data.get("canManageShared") else False
         if st.form_submit_button("Sačuvaj povezivanje", type="primary"):
             if not confirmed:
                 st.error("Potvrdi da oba naziva označavaju isti klub i istu selekciju.")
             else:
                 try:
-                    result = api.save_team_alias(source, internal_name, source_name, confirmed)
+                    result = api.save_team_alias(source, internal_name, source_name, confirmed, "shared" if shared else "own")
                     st.session_state["alias_notice"] = "Povezivanje je sačuvano. U pregledu klikni „Proveri sada“ ili sačekaj uključenu automatsku proveru." if result.get("changed") else "Ovo povezivanje je već sačuvano."
                     st.session_state["alias_reset_form"] = True
                     st.rerun()
@@ -81,6 +82,20 @@ def render_team_aliases(api, snapshot, cloud_mode, handle_error):
     else:
         st.info("Još nema sačuvanih povezivanja. Dodaj dva različita naziva istog kluba u obrazac iznad.")
 
+    shared_links = data.get("sharedAliases", [])
+    if shared_links:
+        st.subheader("Zajednička povezivanja (" + str(len(shared_links)) + ")")
+        st.dataframe(pd.DataFrame([{"Interni naziv": link["internalName"], "Naziv na izvoru": link["sourceName"], "Izvor": ALIAS_SOURCE_NAMES[link["source"]], "Potvrdio": link.get("createdName", "")} for link in shared_links]), hide_index=True, width="stretch")
+        if data.get("canManageShared"):
+            with st.form("remove-shared-alias"):
+                selected_shared = st.selectbox("Zajedničko povezivanje za uklanjanje", shared_links, format_func=lambda link: link["internalName"] + " ↔ " + link["sourceName"], key="shared_alias_remove")
+                if st.form_submit_button("Ukloni zajedničko povezivanje"):
+                    try:
+                        api.remove_team_alias(selected_shared["id"], "shared")
+                        st.rerun()
+                    except ApiError as error:
+                        handle_error(error)
+
     with st.expander("Vrati prethodno preuzeta povezivanja"):
         uploaded = st.file_uploader("Izaberi scoreguard-povezivanja.json", type=["json"], key="alias_import_file")
         with st.form("import-team-aliases"):
@@ -89,8 +104,8 @@ def render_team_aliases(api, snapshot, cloud_mode, handle_error):
                 try:
                     if not import_confirmed:
                         raise ValueError("Potvrdi da su povezivanja proverena.")
-                    if uploaded.size > 1000000:
-                        raise ValueError("Datoteka je prevelika; podržano je najviše 500 povezivanja.")
+                    if uploaded.size > 2 * 1024 * 1024:
+                        raise ValueError("Datoteka je prevelika; podržano je najviše 2000 povezivanja.")
                     payload = json.loads(uploaded.getvalue())
                     if not isinstance(payload, dict) or payload.get("version") != 1 or not isinstance(payload.get("aliases"), list):
                         raise ValueError("Izaberi prethodno preuzetu datoteku povezivanja.")
@@ -99,7 +114,7 @@ def render_team_aliases(api, snapshot, cloud_mode, handle_error):
                     st.session_state["alias_reset_form"] = True
                     st.rerun()
                 except (ValueError, UnicodeError):
-                    st.error("Proveri potvrdu i izaberi važeću JSON datoteku prethodno preuzetih povezivanja (najviše 500).")
+                    st.error("Proveri potvrdu i izaberi važeću JSON datoteku prethodno preuzetih povezivanja (najviše 2000).")
                 except ApiError as error:
                     handle_error(error)
     if cloud_mode:

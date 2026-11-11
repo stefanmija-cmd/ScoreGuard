@@ -7,7 +7,7 @@ export function nativePhase(value){const s=String(value||'').trim().toLowerCase(
 function nativeSchedule(raw){const m=/^(?:(pon|uto|sre|čet|cet|pet|sub|ned)\.?\s+)?([01]\d|2[0-3]):([0-5]\d)$/i.exec(raw||'');return m?{weekday:m[1]?WEEKDAYS[normalizeName(m[1])]:null,time:m[2]+':'+m[3]}:null;}
 export function parseNativeClipboard(text){
  const errors=[],rows=[];const clean=cleanClipboard(text);
- if(clean.length>256000)return {format:'native',rows,errors:['Spisak je prevelik. Dozvoljeno je najviše 200 mečeva.']};
+ if(clean.length>256000)return {format:'native',rows,errors:['Spisak je prevelik. Dozvoljeno je najviše 1000 mečeva.']};
  const lines=clean.split('\n');let records=[];
  if(lines.some(line=>line.includes('\t'))){
   for(let i=0;i<lines.length;i++){if(!lines[i].trim())continue;const fields=lines[i].split('\t').map(s=>s.trim());if(fields.length<6){errors.push(`Red ${i+1}: nedostaju kolone kopirane tabele.`);continue;}records.push({fields,line:i+1,tabular:true});}
@@ -37,7 +37,7 @@ export function parseNativeClipboard(text){
   const minuteRaw=after.find(t=>/^\d{1,3}(?:\+\d{1,2})?['’′]$/.test(t))||'';
   rows.push({line,internalId:f[2],sport:'Fudbal',league:f[1],home:f[3],away:f[4],match:f[3]+' – '+f[4],scheduleRaw:f[5],...schedule,marketRaw,numberHomeRaw,numberAwayRaw,numericScore,colonScoreRaw,colonScore,minuteRaw,phaseRaw,phase});
  }
- if(rows.length>200)errors.push('Dozvoljeno je najviše 200 mečeva.');
+ if(rows.length>1000)errors.push('Dozvoljeno je najviše 1000 mečeva.');
  if(!rows.length&&!errors.length)errors.push('Unesite bar jedan kompletan meč.');
  return {format:'native',rows,errors};
 }

@@ -23,7 +23,10 @@ except CloudRuntimeError as error:
 @st.fragment(run_every="15s")
 def cloud_status():
     status = runtime.status()
-    st.warning("Testna Cloud verzija: provere rade dok je Streamlit instanca aktivna. Uspavljivanje zaustavlja proveru; pri ponovnom kreiranju instance spiskovi, povezivanja klubova i istorija mogu biti izgubljeni.")
+    if status.get("durableStorage"):
+        st.info("Cloud test sa spoljnom bazom: podaci se čuvaju u bazi. Provere rade dok je Streamlit instanca aktivna; uspavljivanje zaustavlja proveru.")
+    else:
+        st.warning("Testna Cloud verzija: provere rade dok je Streamlit instanca aktivna. Uspavljivanje zaustavlja proveru; pri ponovnom kreiranju instance spiskovi, povezivanja klubova i istorija mogu biti izgubljeni. U Podešavanjima preuzmi rezervnu kopiju.")
     if status["running"]:
         st.caption("Servis za proveru je aktivan · interval 5 minuta · ručna provera je dostupna")
     else:

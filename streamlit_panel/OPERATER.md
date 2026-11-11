@@ -1,6 +1,6 @@
 ## Čemu služi aplikacija
 
-ScoreGuard upoređuje rezultate iz tvog kopiranog internog spiska sa podacima sa Flashscore-a i/ili Sofascore-a. Prati fudbalske utakmice koje su u toku i završene utakmice. Neslaganje je signal da operater treba da proveri meč.
+ScoreGuard upoređuje rezultate iz tvog kopiranog internog spiska sa izabranim izvorima: Flashscore, Sofascore i API-Football ako je podešen. Prati fudbalske utakmice koje su u toku i završene utakmice. Neslaganje je signal da operater treba da proveri meč.
 
 Svaki operater ima svoj aktivni spisak. Provere i napomene beleže se pod nalogom prijavljenog operatera.
 
@@ -10,10 +10,12 @@ Svaki operater ima svoj aktivni spisak. Provere i napomene beleže se pod nalogo
 2. Otvori **Uvoz mečeva** i izaberi **Datum prvog dana spiska**. Datum mora odgovarati danu iz kopiranih podataka, npr. „sre“.
 3. Kopiraj spisak iz internog programa i nalepi ga u polje **Nalepite kopirane podatke**. Format se prepoznaje automatski.
 4. Klikni **Pregledaj unos**. Proveri interne šifre, domaćina i gosta, vreme početka, trenutni rezultat i rezultat poluvremena.
-5. Izaberi **Flashscore**, **Sofascore** ili oba izvora. Po potrebi uključi **Proveravaj automatski na svakih 5 minuta**.
+5. Izaberi izvore. Za trenutni test preporučen je **Flashscore**; drugi izvori moraju biti dostupni i podešeni. Po potrebi uključi **Proveravaj automatski na svakih 5 minuta**.
 6. Klikni **Uvezi mečeve**, pa otvori **Pregled mečeva**. Dugme **Proveri sada** zahteva novu proveru izabranih izvora.
 
 Novi uvoz zamenjuje tvoj prethodni aktivni spisak. Spisak drugog operatera se ne menja.
+
+Spisak može imati do **1.000 utakmica**. Pregled prikazuje do 100 po strani; provera uvek obuhvata ceo spisak. Promeni **Stranu pregleda** ili upotrebi pretragu.
 
 ## 2. Kako se mečevi povezuju i rezultati porede
 
@@ -31,6 +33,8 @@ Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova.
 **Automatska provera rezultata radi na svakih 5 minuta (300 sekundi)** kada je automatika uključena i aplikacija aktivna. U pregledu vidiš vreme poslednje i sledeće provere.
 
 **Pregled na ekranu osvežava se na svakih 15 sekundi.** Tada prikazuje već preuzete podatke i status provere. Za novu proveru pre sledećeg termina klikni **Proveri sada**.
+
+Operateri dele preuzete podatke izvora. Ručni zahtevi u razmaku do **15 sekundi** mogu koristiti isto preuzimanje. Vreme stvarnog preuzimanja vidiš u detaljima i ono se ne podmlađuje osvežavanjem ekrana.
 
 Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i poštuje tu pauzu. Ponavljanje klika ne uklanja blokadu izvora.
 
@@ -75,6 +79,32 @@ Na kraju rada klikni **Odjavi se**. Sama odjava i zatvaranje kartice ne pauziraj
 4. Potvrdi da su to isti klub i ista selekcija, pa klikni **Sačuvaj povezivanje**.
 5. Vrati se u pregled i klikni **Proveri sada**, ili sačekaj uključenu automatsku proveru.
 
-Povezivanje se čuva za tvoj nalog i važi i za naredne uvoze. Posle dodavanja ili uklanjanja povezivanja stari rezultat provere se poništava, pa je potrebna nova provera. Datum, vreme i redosled domaćina i gosta ostaju obavezni.
+Lično povezivanje čuva se za tvoj nalog i važi i za naredne uvoze. Administrator može izabrati **Sačuvaj za sve operatere**. Zajedničko povezivanje koriste svi nalozi. Posle dodavanja ili uklanjanja povezivanja potrebna je nova provera. Datum, vreme i redosled domaćina i gosta ostaju obavezni.
 
 U istom ekranu možeš pregledati i ukloniti sačuvane veze. Kroz **Preuzmi povezivanja (JSON)** sačuvaj kopiju, a kroz **Vrati prethodno preuzeta povezivanja** uvezi je na svoj nalog. Ovo je korisno u testnoj verziji ako se lokalni podaci aplikacije izgube. Povezivanja drugog operatera se ne menjaju.
+
+## 8. Predlozi za povezivanje
+
+Poznate skraćenice, poput **Utd / United**, prepoznaju se automatski kada postoji samo jedan odgovarajući meč. Kod nejasnih naziva otvori detalje i pogledaj **Predloge povezivanja**. Izaberi meč, proveri oba kluba i selekcije, pa klikni **Potvrdi ovaj par timova**. Aplikacija pamti vezu i pokreće proveru. Sam predlog ne potvrđuje rezultat. Različiti uzrasti, ženske i rezervne ekipe čuvaju se odvojeno.
+
+## 9. Prioritet i zajednička obrada
+
+Na vrhu pregleda su neslaganja završenih mečeva, zatim live razlike, pa mečevi bez dovoljno podataka. Kolona **Interni unos** pokazuje starost kopiranog spiska; tačno vreme je u detaljima. Stari interni rezultat treba ponovo proveriti u internom programu.
+
+Otvori **Zajednička neslaganja**. Slučaj istog meča je zajednički čak i kada ga prati više operatera. Filtriraj slobodne ili svoje slučajeve, izaberi utakmicu i klikni **Preuzmi slučaj**. Kolege vide tvoje ime. **Oslobodi slučaj** vraća ga među slobodne. Za **Zatvori slučaj** upiši šta je provereno. **Ponovo otvori slučaj** vraća ga u rad.
+
+Statusi **Novo**, **U obradi** i **Rešeno** beleže rad operatera. Zatvaranje slučaja ne menja rezultat i ne uklanja crveno neslaganje. Nova drugačija razlika može ponovo otvoriti rešen slučaj. Razlog provere je u detaljima.
+
+## 10. Zvuk i promene rezultata
+
+U levom meniju uključi **Zvučna upozorenja** i klikni **Testiraj zvuk**. Ako pregledač blokira automatsku reprodukciju, pokreni ton u plejeru. Alarm se oglašava za novo ili promenjeno neslaganje, bez ponavljanja za svako osvežavanje iste razlike. Isključi opciju kada želiš da ga utišaš.
+
+U detaljima se nalazi **Promene rezultata ovog meča**: interni rezultat, poluvreme i podaci izvora tokom provera. Istovetna provera ne dodaje novi zapis. Prikazuje se poslednjih 50 promena za izabrani meč. Test čuva do 2.000 promena po operateru tokom najviše 14 dana; rezervna kopija obuhvata sačuvane promene.
+
+## 11. Rezervna kopija
+
+U **Podešavanjima** izaberi **Pripremi rezervnu kopiju**, pa **Preuzmi rezervnu kopiju**. Sačuvaj fajl na svom računaru. Sadrži tvoj spisak, povezivanja, napomene i istoriju promena. Administratorska kopija uključuje i zajednička povezivanja. Ne sadrži lozinke ni pristupne ključeve.
+
+Kroz **Vrati rezervnu kopiju** izaberi prethodno preuzeti fajl i potvrdi zamenu svog spiska. Posle vraćanja automatika je pauzirana, a prethodni rezultati izvora nisu potvrđeni. Klikni **Proveri sada**, pa po potrebi uključi automatiku. Vraćena istorija ima posebnu oznaku.
+
+Ako u Podešavanjima piše da podaci ostaju lokalni, čuvaj rezervne kopije: testna instanca može izgubiti podatke. Ako je administrator povezao spoljnu bazu, aplikacija prikazuje taj status. Uspavljivanje Streamlita u oba slučaja zaustavlja provere dok se aplikacija ponovo ne pokrene.

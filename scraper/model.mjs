@@ -1,11 +1,16 @@
+import {teamIdentityKey} from './team-matching.mjs';
 export const INTERVAL_MS = 5 * 60 * 1000;
+export const MAX_MATCHES = 1000;
+export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 export const FRESH_MS = INTERVAL_MS + 30 * 1000;
-export const SOURCE_NAMES = {flash: 'Flashscore', sofa: 'Sofascore'};
+export const SOURCE_NAMES = {flash: 'Flashscore', sofa: 'Sofascore', api: 'API-Football'};
 export const LIVE_PHASES = new Set(['first_half', 'half_time', 'second_half', 'extra_time', 'penalties']);
 export const PHASE_LABELS = {first_half:'Prvo poluvreme',half_time:'Poluvreme',second_half:'Drugo poluvreme',extra_time:'Produžeci',penalties:'Penali',finished:'Završeno',finished_extra_time:'Završeno posle produžetaka',finished_penalties:'Završeno posle penala',scheduled:'Nije počelo',postponed:'Odloženo',cancelled:'Otkazano',interrupted:'Prekinuto',awarded:'Službeni rezultat',unknown:'Nepoznat status'};
 export function normalizeName(value) { return String(value ?? '').replace(/đ/g, 'dj').replace(/Đ/g, 'Dj').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''); }
-export function dateKey(value) { return new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Belgrade',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value)); }
-export function timeKey(value) { return new Intl.DateTimeFormat('en-GB', {timeZone:'Europe/Belgrade',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(value)); }
+const dateFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Belgrade',year:'numeric',month:'2-digit',day:'2-digit'});
+const timeFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Belgrade',hour:'2-digit',minute:'2-digit',hour12:false});
+export function dateKey(value) { return dateFormatter.format(new Date(value)); }
+export function timeKey(value) { return timeFormatter.format(new Date(value)); }
 export function validDate(value) { if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return false; const d = new Date(value + 'T12:00:00Z'); return !Number.isNaN(d.valueOf()) && d.toISOString().slice(0,10) === value; }
 export function shiftDate(date, days) { const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+days); return d.toISOString().slice(0,10); }
 export function scorePair(home, away) { const valid = n => (typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 99) || (typeof n === 'string' && /^\d{1,2}$/.test(n)); return valid(home) && valid(away) ? Number(home)+':'+Number(away) : null; }
@@ -30,13 +35,13 @@ export function parseInput(text, idFactory=()=>globalThis.crypto.randomUUID()) {
   if (seen.has(key)) { errors.push(`Red ${i+1}: dupliran meč.`); continue; } seen.add(key);
   rows.push({id:idFactory(),sport:'Fudbal',time:t,league:l,match,ht,score,expectedStatus,scoreBasis:'regular',refs:{}});
  }
- if (rows.length>200) errors.push('Dozvoljeno je najviše 200 mečeva.');
+ if (rows.length>MAX_MATCHES) errors.push('Dozvoljeno je najviše '+MAX_MATCHES+' mečeva.');
  if (!rows.length&&!errors.length) errors.push('Unesite bar jedan meč.');
  return {rows,errors};
 }
 export function validateWatch(body) {
- if (!body || !validDate(body.date) || !Array.isArray(body.sources) || !body.sources.length || body.sources.length>2 || new Set(body.sources).size!==body.sources.length || body.sources.some(s=>!['flash','sofa'].includes(s))) throw new Error('Proverite datum i izbor izvora.');
- if (!Array.isArray(body.matches) || !body.matches.length || body.matches.length>200) throw new Error('Dozvoljeno je od 1 do 200 mečeva.');
+ if (!body || !validDate(body.date) || !Array.isArray(body.sources) || !body.sources.length || body.sources.length>3 || new Set(body.sources).size!==body.sources.length || body.sources.some(s=>!Object.hasOwn(SOURCE_NAMES,s))) throw new Error('Proverite datum i izbor izvora.');
+ if (!Array.isArray(body.matches) || !body.matches.length || body.matches.length>MAX_MATCHES) throw new Error('Dozvoljeno je od 1 do '+MAX_MATCHES+' mečeva.');
  const ids=new Set(),dates=new Set();
  const matches=body.matches.map(m=>{
   if (!m || typeof m.id!=='string' || !m.id || m.id.length>100 || ids.has(m.id) || m.sport!=='Fudbal' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(m.time) || typeof m.league!=='string' || !m.league.trim() || m.league.length>150 || typeof m.match!=='string' || m.match.length>200 || m.match.split(/\s+[–—-]\s+/).length!==2 || (m.score!==null&&normalizeScore(m.score)!==m.score) || (m.ht!=null&&normalizeScore(m.ht)!==m.ht) || (m.scoreBasis!=null&&m.scoreBasis!=='regular') || (m.expectedStatus!=null&&!['live','finished','half_time','first_half','second_half'].includes(m.expectedStatus))) throw new Error('Neispravan zapis meča. Trenutno je podržan samo fudbal, sa rezultatom regularnog vremena.');
@@ -55,16 +60,17 @@ export function validateWatch(body) {
  if(dates.size>3)throw new Error('Jedan spisak podržava najviše tri kalendarska dana.');
  return {date:body.date,sources:[...body.sources],matches};
 }
-export function matchEvent(internal,events,date,aliases={}) {
+export function canonicalClubKey(name,aliases={}) {const key=normalizeName(name);return teamIdentityKey(Object.hasOwn(aliases.teams||{},key)?aliases.teams[key]:name);}
+export function matchEvent(internal,events,date,aliases={},preFiltered=false) {
  const teams=String(internal.match||'').split(/\s+[–—-]\s+/);
  if(teams.length!==2)return {reason:'Timovi nisu jednoznačno razdvojeni.'};
  const [home,away]=teams;
- const canonical=s=>{const key=normalizeName(s);return normalizeName(Object.hasOwn(aliases.teams||{},key)?aliases.teams[key]:s);};
+ const canonical=s=>canonicalClubKey(s,aliases);
  const homeKey=canonical(home),awayKey=canonical(away);
  if(!homeKey||!awayKey)return {reason:'Nedostaje naziv domaćina ili gosta.'};
  if(homeKey===awayKey)return {reason:'Oba tima su povezana sa istim klubom. Proverite sačuvana povezivanja naziva.'};
  // Competition names are display metadata. Club pair, home/away order and kickoff identify the event.
- const candidates=events.filter(e=>Number.isFinite(e.startTimestamp)&&dateKey(e.startTimestamp*1000)===date&&timeKey(e.startTimestamp*1000)===internal.time&&canonical(e.home)===homeKey&&canonical(e.away)===awayKey);
+ const candidates=events.filter(e=>(preFiltered||Number.isFinite(e.startTimestamp)&&dateKey(e.startTimestamp*1000)===date&&timeKey(e.startTimestamp*1000)===internal.time)&&canonical(e.home)===homeKey&&canonical(e.away)===awayKey);
  return candidates.length===1?{event:candidates[0]}:{reason:candidates.length?'Više mogućih mečeva sa istim klubovima, datumom i vremenom; potrebno je ručno uparivanje. Naziv takmičenja ne bira se kao kriterijum.':'Nema tačnog poklapanja domaćina, gosta, datuma i vremena početka. Naziv takmičenja nije uslov za povezivanje.'};
 }
 export function eventReference(event,checkedAt) {

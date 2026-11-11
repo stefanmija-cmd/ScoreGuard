@@ -5,12 +5,27 @@ import hashlib
 import json
 
 BELGRADE = ZoneInfo("Europe/Belgrade")
-SOURCE_NAMES = {"flash": "Flashscore", "sofa": "Sofascore"}
+SOURCE_NAMES = {"flash": "Flashscore", "sofa": "Sofascore", "api": "API-Football"}
 STATUS_NAMES = {"match": "Usaglašeno", "mismatch": "Neslaganje", "unverified": "Nije provereno"}
+WORK_NAMES = {"new": "Novo", "in_progress": "U obradi", "resolved": "Rešeno"}
+
+
+def input_age(value: str | None, now: datetime | None = None) -> str:
+    if not value:
+        return "Nepoznato"
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        seconds = ((now or datetime.now(timezone.utc)) - parsed).total_seconds()
+        if seconds < -30:
+            return "Nepouzdano vreme"
+        minutes = max(0, int(seconds // 60))
+        return "pre " + (str(minutes) + " min" if minutes < 60 else str(minutes // 60) + " h" if minutes < 1440 else str(minutes // 1440) + " dana")
+    except (TypeError, ValueError):
+        return "Nepoznato"
 
 
 def local_time(value: str | None, include_date: bool = False) -> str:
-    if not value:
+    if not isinstance(value, str) or not value:
         return "—"
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(BELGRADE)
@@ -42,7 +57,11 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
             row[SOURCE_NAMES[source]] = reference_score(refs.get(source))
             row[SOURCE_NAMES[source] + " · poluvreme"] = reference_score(refs.get(source), True)
         row["Provera"] = STATUS_NAMES.get(match.get("comparisonStatus"), "Nije provereno")
-        row["Obrada"] = "Obrađeno" if match.get("ack") else "Čeka proveru"
+        row["Prioritet"] = match.get("priorityLabel", "—")
+        row["Interni unos"] = input_age(match.get("importedAt"))
+        workflow = match.get("workflow") or {}
+        row["Obrada"] = WORK_NAMES.get(workflow.get("workStatus"), "Obrađeno" if match.get("ack") else "Čeka proveru")
+        row["Operater"] = workflow.get("ownerName") or "—"
         result.append(row)
     return result
 

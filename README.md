@@ -2,7 +2,7 @@
 
 Ova verzija pokreće Streamlit panel, scraper, naloge i raspored u istoj Streamlit Community Cloud instanci. Ne traži Docker, VPS, domen, BACKEND_URL ni PUBLIC_ORIGIN.
 
-Pravila poređenja ostaju ista: fudbal, live i završeni mečevi, Flashscore i/ili Sofascore, trenutni rezultat i poluvreme. Povezivanje koristi klubove, datum i vreme; preveden naziv takmičenja ne blokira povezivanje. Minuti golova ne porede se.
+Pravila poređenja: fudbal, live i završeni mečevi, trenutni rezultat i poluvreme. Izvori su Flashscore, Sofascore i opcioni API-Football. Povezivanje koristi klubove, datum i vreme; preveden naziv takmičenja ne blokira povezivanje. Minuti golova ne porede se. Interni program se koristi isključivo ručnim kopiranjem spiska.
 
 ## 1. Pripremite dva odvojena fajla
 
@@ -68,7 +68,7 @@ Ako ste aplikaciju već objavili, otvorite `Manage app` → `Settings` → `Secr
 4. Prijavite se kao Stefan ili Milos postojećom lozinkom. Velika i mala slova korisničkog imena nisu bitna.
 5. Otvorite `Uvoz mečeva`, izaberite datum prvog dana spiska i nalepite kopiju iz internog programa.
 6. Kliknite `Pregledaj unos` i proverite interne šifre, domaćina/gosta, tekući rezultat i poluvreme.
-7. Izaberite Flashscore, Sofascore ili oba i uključite automatsku proveru.
+7. Za početni test izaberite Flashscore i uključite automatsku proveru. Sofascore može ostati nedostupan zbog HTTP 403. API-Football zahteva zaseban ključ i plan koji pokriva izabrane datume.
 8. Kliknite `Uvezi mečeve`, zatim otvorite `Pregled mečeva` i kliknite `Proveri sada`.
 
 Mečevi svakog operatera, napomene i istorija odvojeni su prema prijavljenom nalogu. Samo osvežavanje stranice može tražiti novu prijavu; ono samo po sebi ne briše spisak.
@@ -129,3 +129,56 @@ Ranije dodate mape kroz `TEAM_ALIASES_JSON` ostaju aktivne. Ako postoje, ekran p
 - https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy
 - https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management
 - https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app
+
+## 12. Više operatera i veliki spiskovi
+
+Dozvoljeno je do 1.000 utakmica po operateru. Tabela prikazuje do 100 po strani, a provera obuhvata ceo spisak. Svaki operater ima svoj interni unos. Rezultati izvora preuzimaju se zajednički po izvoru i datumu i koriste za poređenje svih spiskova. Uobičajeni interval je 300 sekundi. Ručni zahtevi unutar 15 sekundi dele poslednje preuzimanje; njegovo vreme se ne podmlađuje. Poštuju se i starost odgovora samog izvora, blokade i kvote.
+
+Nova stranica **Zajednička neslaganja** omogućava preuzimanje, oslobađanje i zatvaranje slučaja sa napomenom. Istovremeno preuzimanje istog slučaja dobija samo jednog operatera. Obrada ne menja utvrđeno neslaganje. Nova različita razlika može ponovo otvoriti slučaj. Administrator može objaviti potvrđene nazive klubova za sve operatere; ostali imaju i lična povezivanja.
+
+Za postojeća dva naloga nije potrebno menjati Secrets. Dodatni stvarni nalozi nisu automatski kreirani: za njih su potrebna odabrana korisnička imena i generisana konfiguracija naloga. Test opterećenja koristi izmišljene operatere i kontrolisane rezultate. On proverava algoritam i zajedničko preuzimanje, bez garancije da Community Cloud može trajno opslužiti 12 aktivnih Streamlit sesija i sve stvarne zahteve.
+
+## 13. Rezervna kopija u trenutnom testu
+
+Otvorite **Podešavanja → Pripremi rezervnu kopiju → Preuzmi rezervnu kopiju**. JSON čuva sopstveni spisak, povezivanja, napomene i istoriju promena. Administratorska kopija uključuje zajednička povezivanja. Ne čuva naloge, lozinke, sesije ili API ključeve.
+
+Vraćanje kopije pauzira automatiku i poništava poslednju potvrdu izvora; potrebna je nova provera. Vraćena istorija i napomene su označene. Slučajevi i zaduženja drugih operatera ne prepisuju se ličnom kopijom. Testna istorija čuva najviše 2.000 promena po operateru, do 14 dana, a detalji prikazuju poslednjih 50 promena izabranog meča. Zatvoreni zajednički slučajevi uklanjaju se nakon 14 dana bez aktivnosti.
+
+## 14. Opciona trajna baza za Streamlit test
+
+Lokalni fajlovi u Community Cloudu nisu trajno skladište, čak ni kada koristite SQLite. Zvanično objašnjenje: https://docs.streamlit.io/develop/concepts/connections/connecting-to-data . Bez podešene spoljne baze koristite rezervne kopije i postojeći test; nije pripremljen novi paket za plaćeni server.
+
+Dodata je opcija korišćenja zasebne Supabase baze. Otvaranje naloga i povezivanje nisu urađeni automatski. Ako želite da uključite bazu:
+
+1. U svom Supabase nalogu napravite projekat i proverite uslove i kvote izabranog plana. Nije potrebno kupovati server ili menjati Streamlit hosting.
+2. U njegovom **SQL Editor** otvorite novi upit, kopirajte sadržaj `service/storage-schema.sql` iz ovog repozitorijuma i kliknite **Run**. Tabela nema pristup za anonimne korisnike.
+3. Pronađite URL projekta i serverski `service_role` ključ. Ključ ne šaljite u razgovoru i ne stavljajte ga u repozitorijum.
+4. U postojeći Streamlit **Settings → Secrets**, ispod postojeće konfiguracije naloga, dodajte:
+
+```toml
+SCOREGUARD_STORAGE_URL = "https://VAS-PROJEKAT.supabase.co"
+SCOREGUARD_STORAGE_KEY = "VAS_SERVER_SERVICE_ROLE_KLJUC"
+SCOREGUARD_STORAGE_NAMESPACE = "scoreguard-test"
+```
+
+5. Sačuvajte Secrets i ponovo pokrenite aplikaciju. Ako je baza dostupna i pravilno podešena, postojeći lokalni podaci prenose se samo u dokumente koji još ne postoje u bazi. Postojeći podaci baze imaju prednost. Pre ovog koraka preuzmite rezervne kopije.
+6. U **Podešavanjima** proverite da piše da je povezana spoljna baza. Ako je navedena baza nedostupna, aplikacija prijavljuje problem; ne prelazi prećutno na odvojenu lokalnu kopiju.
+
+Baza čuva spiskove, provere, napomene, povezivanja, zajedničke slučajeve i istoriju. Nalozi i pristupni ključevi ostaju u Secrets, a korisnici se nakon nove instance ponovo prijavljuju. Uspavljivanje Streamlita i dalje prekida provere. Podržan je jedan aktivni servis po ovom prostoru baze; kontrola revizija odbija upis druge nezavisne instance. Za dva odvojena testa koristite različite namespace vrednosti. Isključivanje baze vraća rad na lokalno skladište, pa prethodno izvezite podatke koje želite da zadržite.
+
+## 15. Opcioni API-Football umesto nedostupnog Sofascore-a
+
+Priključak koristi dokumentovani API dobavljača: https://www.api-football.com/documentation-v3 . Nije zaobilaženje zaštite Sofascore-a i ne menja izabrani izvor bez vašeg izbora.
+
+Pre aktiviranja proverite plan, sezone i pokrivenost vaših takmičenja, uključujući poluvreme i live podatke. Dobavljač za besplatni plan u 2026. navodi sezone 2022–2024; takav plan nije rešenje za današnje utakmice: https://www.api-football.com/news/post/how-to-get-all-data-from-a-league-with-api-football . Besplatnih 100 zahteva dnevno takođe nije dovoljno za proveru tokom celog dana na pet minuta: samo jedan datum traži 288 zahteva dnevno, a više datuma povećava broj. Izvori i ograničenja: https://www.api-football.com/pricing . Cene i uslove proverite na sajtu pre pretplate.
+
+Ako već imate odgovarajući nalog i direktan API-SPORTS ključ, dodajte ga u postojeći Streamlit Secrets:
+
+```toml
+APIFOOTBALL_KEY = "VAS_DIREKTNI_API_SPORTS_KLJUC"
+APIFOOTBALL_DAILY_LIMIT = 90
+```
+
+Limit od 90 je namerno oprezan za kratke probe. Povećajte ga samo prema svom planu; ne pretpostavlja se da imate plaćenu pretplatu. Ključ se šalje samo u serverskom zaglavlju na `v3.football.api-sports.io`. RapidAPI ključ koristi drugi režim i nije podržan ovim priključkom. Posle ponovnog pokretanja izaberite **API-Football** u aplikaciji i pokrenite proveru. Bez ključa izvor ostaje jasno neproveren. Uspešan pristup stvarnom API-Football nalogu nije potvrđen u ovoj isporuci, jer ključ nije dostavljen.
+
+Druga opcija za kasniju procenu je Sportmonks sa probnim periodom i pokrivenošću prema paketu: https://www.sportmonks.com/football-api/plans-pricing/ . Njegov priključak nije uključen u ovu verziju. Za sada test funkcionalnosti nastavlja se sa Flashscore-om i ručnim internim unosom.
