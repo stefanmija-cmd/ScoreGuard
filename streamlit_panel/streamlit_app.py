@@ -185,8 +185,7 @@ def monitor_page():
     sources = snapshot["watch"]["sources"]
     rows = table_rows(matches, sources)
     if rows:
-        st.dataframe(pd.DataFrame(rows).style.apply(row_style, axis=1), hide_index=True, use_container_width=True,
-                     column_config={"Razlog": st.column_config.TextColumn("Razlog", width="large")})
+        st.dataframe(pd.DataFrame(rows).style.apply(row_style, axis=1), hide_index=True, use_container_width=True)
         render_match_details(matches, sources)
     else:
         st.info("Nema mečeva za izabrane filtere.")

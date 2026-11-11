@@ -46,12 +46,12 @@ Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i pošt
 
 Podaci izvora stariji od **5 minuta i 30 sekundi** više ne potvrđuju rezultat. Uvek pogledaj vreme poslednje provere. Ako je izabran jedan dostupan i jedan nedostupan izvor, potpuno usaglašavanje nije potvrđeno; poznata razlika se i dalje prikazuje kao neslaganje.
 
-Kolona **Razlog** objašnjava oznaku svakog meča: razliku u rezultatu, poluvremenu ili statusu, ili podatak koji nedostaje. Isto objašnjenje nalazi se u detaljima meča.
+U **Detaljima meča i obradi neslaganja** vidiš razlog oznake: razliku u rezultatu, poluvremenu ili statusu, ili podatak koji nedostaje.
 
 ## 5. Kako da obradiš neslaganje
 
 1. U **Pregledu mečeva** izaberi filter **Neslaganja**. Meč možeš pronaći i pretragom kluba, takmičenja ili interne šifre.
-2. Pročitaj kolonu **Razlog**, pa otvori **Detalji meča i obrada neslaganja** i izaberi utakmicu.
+2. Otvori **Detalji meča i obrada neslaganja**, izaberi utakmicu i pročitaj razlog oznake.
 3. Uporedi interni rezultat, poluvreme i period sa podacima svakog izabranog izvora. Proveri i vreme preuzimanja.
 4. Preko **Otvori Flashscore** ili **Otvori Sofascore** pogledaj meč na samom sajtu. Proveri i najnovije stanje u internom programu.
 5. U **Napomena operatera** upiši šta si proverio i klikni **Sačuvaj obradu**.

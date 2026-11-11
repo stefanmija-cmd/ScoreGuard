@@ -42,7 +42,6 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
             row[SOURCE_NAMES[source]] = reference_score(refs.get(source))
             row[SOURCE_NAMES[source] + " · poluvreme"] = reference_score(refs.get(source), True)
         row["Provera"] = STATUS_NAMES.get(match.get("comparisonStatus"), "Nije provereno")
-        row["Razlog"] = match.get("comparisonReason") or "—"
         row["Obrada"] = "Obrađeno" if match.get("ack") else "Čeka proveru"
         result.append(row)
     return result
