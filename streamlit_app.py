@@ -16,7 +16,7 @@ try:
 except CloudRuntimeError as error:
     st.title("ScoreGuard · Cloud test")
     st.error(str(error))
-    st.link_button("Uputstvo i preuzimanje konfiguracije", "https://scoreguard-ops-monitor.appealingphlox8.chatgpt.site/downloads/cloud-uputstvo")
+    st.link_button("Uputstvo za postavljanje", "https://github.com/stefanmija-cmd/ScoreGuard/blob/main/CLOUD-START.md")
     st.stop()
 
 
