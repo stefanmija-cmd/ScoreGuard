@@ -22,6 +22,7 @@ Novi uvoz zamenjuje tvoj prethodni aktivni spisak. Spisak drugog operatera se ne
 - Proverava se trenutni rezultat regularnog vremena i rezultat poluvremena kada je primenljiv. Produžeci i penali ne dodaju se rezultatu za 90 minuta.
 - U prvom poluvremenu završen rezultat poluvremena još nije dostupan. Minuti golova se ne proveravaju.
 - U kopiji iz internog programa **HT označava prvo, a FT drugo poluvreme**. Period utakmice prikazan je i u detaljima meča.
+- Oznaka **FT / 2nd half** može ostati i nakon kraja utakmice. Kada izvor potvrdi da je meč završen, ta interna oznaka sama ne izaziva neslaganje. Rezultat i poluvreme i dalje moraju da se poklope; nedostajući ili zastareli podaci ne potvrđuju rezultat.
 
 Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova. Različite nazive istog kluba poveži kroz **Poveži nazive klubova**. Kada postoji više mogućih mečeva, aplikacija ne bira proizvoljno.
 
@@ -45,10 +46,12 @@ Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i pošt
 
 Podaci izvora stariji od **5 minuta i 30 sekundi** više ne potvrđuju rezultat. Uvek pogledaj vreme poslednje provere. Ako je izabran jedan dostupan i jedan nedostupan izvor, potpuno usaglašavanje nije potvrđeno; poznata razlika se i dalje prikazuje kao neslaganje.
 
+Kolona **Razlog** objašnjava oznaku svakog meča: razliku u rezultatu, poluvremenu ili statusu, ili podatak koji nedostaje. Isto objašnjenje nalazi se u detaljima meča.
+
 ## 5. Kako da obradiš neslaganje
 
 1. U **Pregledu mečeva** izaberi filter **Neslaganja**. Meč možeš pronaći i pretragom kluba, takmičenja ili interne šifre.
-2. Otvori **Detalji meča i obrada neslaganja** i izaberi utakmicu.
+2. Pročitaj kolonu **Razlog**, pa otvori **Detalji meča i obrada neslaganja** i izaberi utakmicu.
 3. Uporedi interni rezultat, poluvreme i period sa podacima svakog izabranog izvora. Proveri i vreme preuzimanja.
 4. Preko **Otvori Flashscore** ili **Otvori Sofascore** pogledaj meč na samom sajtu. Proveri i najnovije stanje u internom programu.
 5. U **Napomena operatera** upiši šta si proverio i klikni **Sačuvaj obradu**.

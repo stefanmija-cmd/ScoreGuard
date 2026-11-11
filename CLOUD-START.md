@@ -125,6 +125,12 @@ Povezivanja se čuvaju za vaš nalog i koriste i u budućim uvozima. Posle izmen
 
 Na ovom ekranu možete ukloniti pogrešnu vezu, preuzeti JSON kopiju ili vratiti prethodno preuzeta povezivanja. U testnoj verziji sačuvajte kopiju pre ponovnog kreiranja aplikacije, jer lokalni podaci mogu nestati. Nalozi, lozinke i spiskovi mečeva nisu deo te JSON kopije.
 
+## Završeni mečevi i objašnjenje provere
+
+Interna oznaka `FT / 2nd half` može ostati i posle kraja utakmice. Ako izvor potvrdi završen meč, a rezultat i poluvreme se poklapaju, ova oznaka sama više ne izaziva crveno neslaganje. Pravilo važi i za već sačuvane uvoze iz internog programa. Nedostajući ili zastareli podaci ostaju neprovereni, a stvarne razlike u rezultatu i poluvremenu ostaju neslaganja.
+
+U pregledu je kolona **Razlog** sa objašnjenjem statusa. Isto objašnjenje prikazuje se u detaljima meča. Posle ažuriranja koda na GitHub-u sačekajte da Streamlit učita izmene; ako i dalje prikazuje staru verziju, izaberite **Manage app → Reboot app**, pa u aplikaciji kliknite **Proveri sada**.
+
 Ranije dodate mape kroz `TEAM_ALIASES_JSON` ostaju aktivne. Ako postoje, ekran prikazuje obaveštenje; uklanjanje nove veze iz panela ne briše ranija pravila iz tih podešavanja.
 
 ## 11. Zvanična dokumentacija

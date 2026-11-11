@@ -76,12 +76,43 @@ export function eventReference(event,checkedAt) {
  return {...base,state:'verified',score,htRequired:event.phase!=='first_half',reason:event.phase==='first_half'?'Poluvreme još nije završeno.':event.halfTime?'':'Poluvreme nije dostupno.'};
 }
 export function referenceFresh(ref,now=Date.now(),demo=false) { return !!ref&&(demo||Number.isFinite(Date.parse(ref.checkedAt))&&now-Date.parse(ref.checkedAt)<=FRESH_MS&&now-Date.parse(ref.checkedAt)>=-30000); }
+function nativeSecondHalfFinished(m,ref) {
+ // The backoffice FT / 2nd half marker can remain after the final whistle.
+ // Only a source's state establishes completion; an explicit standard 2H stays strict.
+ return !!(m.native||m.inputFormat==='native')&&m.expectedStatus==='second_half'&&ref.eventState==='finished';
+}
+function expectedStatusMatches(m,ref) {
+ if(!m.expectedStatus||nativeSecondHalfFinished(m,ref))return true;
+ return m.expectedStatus==='live'?ref.eventState==='live':m.expectedStatus==='finished'?ref.eventState==='finished':ref.phase===m.expectedStatus;
+}
+function comparisonPhaseLabel(ref) {
+ return ref.phaseLabel||PHASE_LABELS[ref.phase]||({live:'Uživo',finished:'Završeno'})[ref.eventState]||PHASE_LABELS.unknown;
+}
+export function compareResult(m,sources,now=Date.now(),demo=false) {
+ if(!m.score)return {status:'unverified',reason:'Nedostaje interni rezultat.'};
+ const selected=sources.map(source=>({source,ref:m.refs?.[source],name:SOURCE_NAMES[source]||source}));
+ if(!selected.length)return {status:'unverified',reason:'Nije izabran izvor za proveru.'};
+ const fresh=selected.filter(({ref})=>ref?.state==='verified'&&referenceFresh(ref,now,demo));
+ const differences=[];
+ for(const {ref,name} of fresh){
+  if(ref.score!==m.score)differences.push(`Rezultat: interno ${m.score}, ${name} ${ref.score||'—'}.`);
+  if(m.ht&&ref.ht&&m.ht!==ref.ht)differences.push(`Poluvreme: interno ${m.ht}, ${name} ${ref.ht}.`);
+  if(!expectedStatusMatches(m,ref))differences.push(`Status: interno ${PHASE_LABELS[m.expectedStatus]||(m.expectedStatus==='live'?'Uživo':m.expectedStatus)}, ${name} ${comparisonPhaseLabel(ref)}.`);
+ }
+ if(new Set(fresh.map(({ref})=>ref.eventState).filter(Boolean)).size>1)differences.push('Izvori se ne slažu da li je utakmica završena: '+fresh.map(({name,ref})=>name+' '+comparisonPhaseLabel(ref)).join(', ')+'.');
+ if(differences.length)return {status:'mismatch',reason:differences.join(' ')};
+ const incomplete=[];
+ for(const {ref,name} of selected){
+  if(ref?.state!=='verified')incomplete.push(name+': '+(ref?.reason||'Nema pouzdanih podataka za proveru.'));
+  else if(!referenceFresh(ref,now,demo))incomplete.push(name+': Podaci su zastareli ili vreme provere nije pouzdano.');
+  else if(ref.htRequired===false){if(m.ht)incomplete.push(name+': Prvo poluvreme još traje; uneti rezultat poluvremena nije potvrđen.');}
+  else if(!m.ht||!ref.ht)incomplete.push(name+': '+(!m.ht&&!ref.ht?'Nedostaje interni rezultat poluvremena i rezultat poluvremena na izvoru.':!m.ht?'Nedostaje interni rezultat poluvremena.':'Poluvreme nije dostupno na izvoru.'));
+ }
+ if(incomplete.length)return {status:'unverified',reason:incomplete.join(' ')};
+ const completed=fresh.filter(({ref})=>nativeSecondHalfFinished(m,ref));
+ const reason=completed.length?'Rezultat i poluvreme se poklapaju sa svim izabranim izvorima. '+completed.map(({name,ref})=>name+': '+comparisonPhaseLabel(ref)+'.').join(' ')+' Interna oznaka „FT / 2nd half“ može ostati i posle završetka utakmice.':fresh.every(({ref})=>ref.htRequired===false)?'Svi izabrani izvori potvrđuju rezultat. Prvo poluvreme još traje.':'Rezultat i poluvreme se poklapaju sa svim izabranim izvorima.';
+ return {status:'match',reason};
+}
 export function resultStatus(m,sources,now=Date.now(),demo=false) {
- if(!m.score)return 'unverified';
- const refs=sources.map(s=>m.refs?.[s]); if (!refs.length) return 'unverified';
- const fresh=refs.filter(r=>r?.state==='verified'&&referenceFresh(r,now,demo));
- if (fresh.some(r=>r.score!==m.score || (m.ht&&r.ht&&m.ht!==r.ht) || (m.expectedStatus&&(m.expectedStatus==='live'?r.eventState!=='live':m.expectedStatus==='finished'?r.eventState!=='finished':r.phase!==m.expectedStatus)))) return 'mismatch';
- if (new Set(fresh.map(r=>r.eventState).filter(Boolean)).size>1) return 'mismatch';
- if (fresh.length===refs.length && fresh.every(r=>r.score===m.score && (r.htRequired===false ? !m.ht : !!m.ht&&!!r.ht&&r.ht===m.ht))) return 'match';
- return 'unverified';
+ return compareResult(m,sources,now,demo).status;
 }

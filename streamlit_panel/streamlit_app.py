@@ -103,6 +103,10 @@ def render_match_details(matches, sources):
         match_by_id = {m["id"]: m for m in matches}
         selected = st.selectbox("Izaberite utakmicu", list(match_by_id), format_func=lambda key: match_by_id[key]["match"], key="detail_match")
         match = match_by_id[selected]
+        reason = match.get("comparisonReason")
+        if reason:
+            show_reason = {"mismatch": st.error, "unverified": st.warning, "match": st.success}.get(match.get("comparisonStatus"), st.info)
+            show_reason(reason)
         st.write("**Interni rezultat:** " + (match.get("score") or "—") + " · **Poluvreme:** " + (match.get("ht") or "—"))
         st.caption("Interna šifra: " + str(match.get("internalId", "—")) + " · Datum: " + str(match.get("date", "—")))
         native = match.get("native") or {}
@@ -181,7 +185,8 @@ def monitor_page():
     sources = snapshot["watch"]["sources"]
     rows = table_rows(matches, sources)
     if rows:
-        st.dataframe(pd.DataFrame(rows).style.apply(row_style, axis=1), hide_index=True, use_container_width=True)
+        st.dataframe(pd.DataFrame(rows).style.apply(row_style, axis=1), hide_index=True, use_container_width=True,
+                     column_config={"Razlog": st.column_config.TextColumn("Razlog", width="large")})
         render_match_details(matches, sources)
     else:
         st.info("Nema mečeva za izabrane filtere.")
