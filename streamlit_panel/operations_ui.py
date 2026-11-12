@@ -8,7 +8,7 @@ from functools import lru_cache
 import pandas as pd
 import streamlit as st
 from streamlit_panel.api_client import ApiError
-from streamlit_panel.presentation import SOURCE_NAMES, LEGACY_SOURCE_NAMES, STATUS_NAMES, WORK_NAMES, input_age, local_time
+from streamlit_panel.presentation import SOURCE_NAMES, LEGACY_SOURCE_NAMES, STATUS_NAMES, input_age, local_time
 
 
 def detect_alerts(matches, previous):
@@ -37,41 +37,6 @@ def render_sound(matches, context="monitor"):
         st.toast("Novo ili promenjeno neslaganje: " + str(len(changed)), icon="⚠️")
         if st.session_state.get("sound_enabled"):
             st.audio(alarm_wav(), format="audio/wav", autoplay=True)
-
-
-def render_workflow(api, workflow, handle_error, context="detail"):
-    if not workflow:
-        return
-    case_id = workflow["id"]
-    status = workflow["workStatus"]
-    user = st.session_state.get("user", {})
-    st.subheader("Obrada slučaja")
-    st.write(WORK_NAMES.get(status, status) + (" · " + workflow["ownerName"] if workflow.get("ownerName") else ""))
-    st.caption("Status obrade beleži rad operatera. Provera rezultata ostaje nezavisna i neslaganje ostaje vidljivo dok postoji.")
-
-    def submit(action, note=""):
-        try:
-            api.case_action(case_id, action, workflow["version"], note)
-            st.session_state["operation_notice"] = "Obrada slučaja je sačuvana."
-            st.rerun()
-        except ApiError as error:
-            handle_error(error)
-
-    if status == "resolved":
-        if st.button("Ponovo otvori slučaj", key=context + "-reopen-" + case_id):
-            submit("reopen")
-    elif not workflow.get("owner") or workflow.get("owner") == user.get("id"):
-        if status == "new" and st.button("Preuzmi slučaj", key=context + "-claim-" + case_id, type="primary"):
-            submit("claim")
-        if workflow.get("owner") == user.get("id") and st.button("Oslobodi slučaj", key=context + "-release-" + case_id):
-            submit("release")
-    else:
-        st.info("Ovaj slučaj već obrađuje " + str(workflow.get("ownerName") or "drugi operater") + ".")
-    if status != "resolved" and (workflow.get("owner") == user.get("id") or user.get("role") == "admin"):
-        with st.form(context + "-resolve-" + case_id):
-            note = st.text_area("Šta je provereno i kako je slučaj rešen?", max_chars=1000, key=context + "-case-note-" + case_id)
-            if st.form_submit_button("Zatvori slučaj"):
-                submit("resolve", note)
 
 
 def render_suggestions(api, match, sources, snapshot, handle_error):
@@ -125,45 +90,36 @@ def render_timeline(api, match_id, handle_error):
 
 def render_cases(api, handle_error):
     st.title("Zajednička neslaganja")
-    st.caption("Slučajeve vide svi prijavljeni operateri. Preuzmi slučaj da kolege znaju ko ga proverava.")
-    left, middle, right = st.columns([1, 1, 2])
-    with left:
-        chosen = st.selectbox("Zaduženje", ["Svi", "Moji", "Slobodni"], key="case_owner_filter")
-    with middle:
-        resolved = st.checkbox("Prikaži i rešene", key="cases_resolved")
-    with right:
-        query = st.text_input("Pretraži zajednička neslaganja", max_chars=150, key="case_search")
+    st.caption("Zajednički pregled praćenih neslaganja i rezultata poslednjih provera za sve operatere.")
+    query = st.text_input("Pretraži zajednička neslaganja", max_chars=150, key="case_search")
     page = int(st.number_input("Strana", min_value=1, value=1, step=1, key="case_page"))
     try:
-        data = api.cases((page - 1) * 100, resolved, {"Moji": "me", "Slobodni": "unassigned"}.get(chosen, ""), query)
+        # Legacy work status must never hide a known score discrepancy.
+        data = api.cases((page - 1) * 100, True, "", query)
     except ApiError as error:
         handle_error(error)
         return
     cases = data.get("cases", [])
-    st.caption("Ukupno slučajeva za izabrane filtere: " + str(data.get("total", 0)) + " · do 100 po strani")
+    st.caption("Ukupno praćenih mečeva za izabranu pretragu: " + str(data.get("total", 0)) + " · do 100 po strani")
     if not cases:
-        st.info("Nema slučajeva na ovoj strani. Ako si promenio filtere, vrati se na prvu stranu.")
+        st.info("Nema mečeva na ovoj strani. Ako si promenio pretragu, vrati se na prvu stranu.")
         return
     rows = []
     for item in cases:
         evidence = item.get("evidence") or {}
-        rows.append({"Datum": evidence.get("date", ""), "Utakmica": evidence.get("match", ""), "Prioritet": ["1 · Završeni meč", "2 · Live razlika", "3 · Proveri podatke"][item["priority"]],
+        rows.append({"Datum": evidence.get("date", ""), "Utakmica": evidence.get("match", ""),
                      "Interno": evidence.get("internal", {}).get("score") or "—", "Provera": STATUS_NAMES.get(item["comparisonStatus"], "Nije provereno"),
-                     "Obrada": WORK_NAMES.get(item["workStatus"], "Novo"), "Operater": item.get("ownerName") or "—", "Spiskova": item.get("operatorCount", 1)})
+                     "Spiskova": item.get("operatorCount", 1)})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
     render_sound([{"id": c["id"], "match": c.get("evidence", {}).get("match", c["id"]), "date": c.get("evidence", {}).get("date", ""), "comparisonStatus": c["comparisonStatus"], "alertSignature": c.get("evidence", {}).get("signature")} for c in cases], "cases")
-    with st.expander("Detalji zajedničkog slučaja i obrada", expanded=True):
-        selected = st.selectbox("Izaberi slučaj", cases, format_func=lambda item: item.get("evidence", {}).get("match", item["id"]), key="selected_case")
+    with st.expander("Detalji zajedničkog meča", expanded=True):
+        selected = st.selectbox("Izaberi meč", cases, format_func=lambda item: item.get("evidence", {}).get("match", item["id"]), key="selected_case")
         st.write(selected.get("comparisonReason") or "Nema pouzdanih podataka za poređenje.")
         evidence = selected.get("evidence") or {}
         st.caption("Interni snimak " + input_age(evidence.get("importedAt")) + " · proveru pokrenuo " + str(evidence.get("operator", "—")))
         for source, ref in evidence.get("refs", {}).items():
             st.write(SOURCE_NAMES.get(source, source) + ": " + (ref.get("score") or "—") + " · poluvreme " + (ref.get("ht") or "—"))
             st.caption("Preuzeto " + local_time(ref.get("checkedAt"), True))
-        render_workflow(api, selected, handle_error, "board")
-        if selected.get("events"):
-            actions = {"opened": "Otvoreno", "reopened": "Ponovo otvoreno", "claim": "Preuzeto", "release": "Oslobođeno", "resolve": "Rešeno", "reopen": "Ponovo otvoreno"}
-            st.dataframe(pd.DataFrame([{"Vreme": local_time(e.get("at"), True), "Operater": e.get("name") or e.get("operator"), "Radnja": actions.get(e["action"], e["action"]), "Napomena": e.get("note", "")} for e in selected["events"]]), hide_index=True, width="stretch")
 
 
 def render_backup(api, storage, handle_error):
@@ -173,7 +129,7 @@ def render_backup(api, storage, handle_error):
     else:
         st.warning("Podaci su lokalni u ovoj testnoj instanci i mogu biti izgubljeni. Preuzmi rezervnu kopiju pre važnih izmena ili ponovnog kreiranja aplikacije.")
     if storage.get("state") not in (None, "ready"):
-        st.error("Zapisivanje podataka nije potvrđeno. Proveri status baze pre nastavka obrade.")
+        st.error("Zapisivanje podataka nije potvrđeno. Proveri status baze.")
     if st.button("Pripremi rezervnu kopiju", key="prepare_backup"):
         try:
             st.session_state["backup_bytes"] = json.dumps(api.backup(), ensure_ascii=False, indent=2).encode("utf-8")

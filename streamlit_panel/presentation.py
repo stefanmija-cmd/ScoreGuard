@@ -8,7 +8,6 @@ BELGRADE = ZoneInfo("Europe/Belgrade")
 SOURCE_NAMES = {"flash": "Flashscore", "f24": "Futbol24", "api": "API-Football"}
 LEGACY_SOURCE_NAMES = {"sofa": "Sofascore (arhiva)"}
 STATUS_NAMES = {"match": "Usaglašeno", "mismatch": "Neslaganje", "unverified": "Nije provereno"}
-WORK_NAMES = {"new": "Novo", "in_progress": "U obradi", "resolved": "Rešeno"}
 
 
 def input_age(value: str | None, now: datetime | None = None) -> str:
@@ -58,11 +57,7 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
             row[SOURCE_NAMES[source]] = reference_score(refs.get(source))
             row[SOURCE_NAMES[source] + " · poluvreme"] = reference_score(refs.get(source), True)
         row["Provera"] = STATUS_NAMES.get(match.get("comparisonStatus"), "Nije provereno")
-        row["Prioritet"] = match.get("priorityLabel", "—")
         row["Interni unos"] = input_age(match.get("importedAt"))
-        workflow = match.get("workflow") or {}
-        row["Obrada"] = WORK_NAMES.get(workflow.get("workStatus"), "Obrađeno" if match.get("ack") else "Čeka proveru")
-        row["Operater"] = workflow.get("ownerName") or "—"
         result.append(row)
     return result
 

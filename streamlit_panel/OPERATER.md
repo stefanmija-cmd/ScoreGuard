@@ -2,7 +2,7 @@
 
 ScoreGuard upoređuje rezultate iz tvog kopiranog internog spiska sa izabranim izvorima: Flashscore, Futbol24 i API-Football ako je podešen. Prati fudbalske utakmice koje su u toku i završene utakmice. Neslaganje je signal da operater treba da proveri meč.
 
-Svaki operater ima svoj aktivni spisak. Provere i napomene beleže se pod nalogom prijavljenog operatera.
+Svaki operater ima svoj aktivni spisak. Provere beleže nalog prijavljenog operatera. Aplikacija prikazuje rezultate i upozorava na neslaganja.
 
 ## 1. Prijava i uvoz mečeva
 
@@ -52,24 +52,23 @@ Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i pošt
 
 Podaci izvora stariji od **5 minuta i 30 sekundi** više ne potvrđuju rezultat. Uvek pogledaj vreme poslednje provere. Ako je izabran jedan dostupan i jedan nedostupan izvor, potpuno usaglašavanje nije potvrđeno; poznata razlika se i dalje prikazuje kao neslaganje.
 
-U **Detaljima meča i obradi neslaganja** vidiš razlog oznake: razliku u rezultatu, poluvremenu ili statusu, ili podatak koji nedostaje.
+U **Detaljima meča** vidiš razlog oznake: razliku u rezultatu, poluvremenu ili statusu, ili podatak koji nedostaje.
 
-## 5. Kako da obradiš neslaganje
+## 5. Kako da proveriš neslaganje
 
 1. U **Pregledu mečeva** izaberi filter **Neslaganja**. Meč možeš pronaći i pretragom kluba, takmičenja ili interne šifre.
-2. Otvori **Detalji meča i obrada neslaganja**, izaberi utakmicu i pročitaj razlog oznake.
+2. Otvori **Detalji meča**, izaberi utakmicu i pročitaj razlog oznake.
 3. Uporedi interni rezultat, poluvreme i period sa podacima svakog izabranog izvora. Proveri i vreme preuzimanja.
 4. Preko **Otvori Flashscore** ili **Otvori Futbol24** pogledaj meč na samom sajtu. Proveri i najnovije stanje u internom programu.
-5. U **Napomena operatera** upiši šta si proverio i klikni **Sačuvaj obradu**.
-6. Kada dobiješ novu internu vrednost, ponovo uvezi spisak i pokreni proveru.
+5. Kada dobiješ novu internu vrednost, ponovo uvezi spisak i pokreni proveru.
 
-Sačuvana napomena beleži ko je obradio meč i kada. Ona ne menja rezultat niti uklanja postojeće neslaganje.
+Status se računa iz kopiranih podataka i poslednjih rezultata izvora. Novo preuzimanje ili novi interni spisak ažuriraju prikaz.
 
 ## 6. Podešavanja, istorija i kraj smene
 
 U **Podešavanjima** možeš promeniti izvore i uključiti ili pauzirati automatske provere. Klikni **Sačuvaj podešavanja** da primeniš izbor. Ručna provera ostaje dostupna i kada je automatika pauzirana.
 
-U **Istoriji aktivnosti** vidiš prethodne ručne i automatske provere i sačuvane napomene. Istoriju provera možeš preuzeti kao CSV.
+U **Istoriji aktivnosti** vidiš prethodne ručne i automatske provere, vreme i operatera. Istoriju provera možeš preuzeti kao CSV.
 
 Na kraju rada klikni **Odjavi se**. Sama odjava i zatvaranje kartice ne pauziraju uključene provere dok aplikacija radi. Ako želiš da zaustaviš automatski nadzor svog spiska, prvo isključi automatiku u **Podešavanjima** i sačuvaj izbor.
 
@@ -91,13 +90,13 @@ Poznate skraćenice, poput **Utd / United**, i jednoznačni parovi sa najmanje *
 
 Kod slabijih ili bliskih poklapanja otvori detalje i pogledaj **Predloge povezivanja**. Izaberi meč, proveri oba kluba i selekcije, pa klikni **Potvrdi ovaj par timova**. Aplikacija pamti potvrđenu vezu i pokreće proveru. Sam predlog ne potvrđuje rezultat. Različiti uzrasti, ženske i rezervne ekipe čuvaju se odvojeno. Automatski povezan meč i dalje može imati neslaganje ili nedovoljno sveže podatke.
 
-## 9. Prioritet i zajednička obrada
+## 9. Zajednički pregled neslaganja
 
 Na vrhu pregleda su neslaganja završenih mečeva, zatim live razlike, pa mečevi bez dovoljno podataka. Kolona **Interni unos** pokazuje starost kopiranog spiska; tačno vreme je u detaljima. Stari interni rezultat treba ponovo proveriti u internom programu.
 
-Otvori **Zajednička neslaganja**. Slučaj istog meča je zajednički čak i kada ga prati više operatera. Filtriraj slobodne ili svoje slučajeve, izaberi utakmicu i klikni **Preuzmi slučaj**. Kolege vide tvoje ime. **Oslobodi slučaj** vraća ga među slobodne. Za **Zatvori slučaj** upiši šta je provereno. **Ponovo otvori slučaj** vraća ga u rad.
+Otvori **Zajednička neslaganja** za pregled mečeva kod svih operatera. Isti meč prikazuje se zajedno kada ga prati više naloga; kolona **Spiskova** pokazuje na koliko spiskova postoji. Pretragom pronađi klub, takmičenje ili šifru i otvori **Detalje zajedničkog meča**.
 
-Statusi **Novo**, **U obradi** i **Rešeno** beleže rad operatera. Zatvaranje slučaja ne menja rezultat i ne uklanja crveno neslaganje. Nova drugačija razlika može ponovo otvoriti rešen slučaj. Razlog provere je u detaljima.
+Pregled prikazuje rezultate poslednjih provera, njihovu starost i razlog statusa. Ranije zabeležen status obrade ne skriva poznato neslaganje rezultata.
 
 ## 10. Zvuk i promene rezultata
 
@@ -107,7 +106,7 @@ U detaljima se nalazi **Promene rezultata ovog meča**: interni rezultat, poluvr
 
 ## 11. Rezervna kopija
 
-U **Podešavanjima** izaberi **Pripremi rezervnu kopiju**, pa **Preuzmi rezervnu kopiju**. Sačuvaj fajl na svom računaru. Sadrži tvoj spisak, povezivanja, napomene i istoriju promena. Administratorska kopija uključuje i zajednička povezivanja. Ne sadrži lozinke ni pristupne ključeve.
+U **Podešavanjima** izaberi **Pripremi rezervnu kopiju**, pa **Preuzmi rezervnu kopiju**. Sačuvaj fajl na svom računaru. Sadrži tvoj spisak, povezivanja i istoriju promena. Administratorska kopija uključuje i zajednička povezivanja. Ne sadrži lozinke ni pristupne ključeve.
 
 Kroz **Vrati rezervnu kopiju** izaberi prethodno preuzeti fajl i potvrdi zamenu svog spiska. Posle vraćanja automatika je pauzirana, a prethodni rezultati izvora nisu potvrđeni. Klikni **Proveri sada**, pa po potrebi uključi automatiku. Vraćena istorija ima posebnu oznaku.
 

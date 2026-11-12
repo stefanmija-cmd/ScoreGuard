@@ -7,7 +7,7 @@ import streamlit as st
 from streamlit_panel.api_client import ApiClient, ApiError
 from streamlit_panel.presentation import BELGRADE, SOURCE_NAMES, STATUS_NAMES, input_age, local_time, preview_fingerprint, preview_rows, row_style, table_rows
 from streamlit_panel.team_aliases_ui import render_team_aliases
-from streamlit_panel.operations_ui import alarm_wav, render_sound, render_workflow, render_suggestions, render_timeline, render_cases, render_backup
+from streamlit_panel.operations_ui import alarm_wav, render_sound, render_suggestions, render_timeline, render_cases, render_backup
 
 CLOUD_MODE = os.environ.get("SCOREGUARD_CLOUD") == "1"
 if not CLOUD_MODE:
@@ -104,7 +104,7 @@ def open_team_aliases(match):
 def render_match_details(matches, sources, snapshot=None, operations_enabled=False):
     if not matches:
         return
-    with st.expander("Detalji meča i obrada neslaganja"):
+    with st.expander("Detalji meča"):
         match_by_id = {m["id"]: m for m in matches}
         selected = st.selectbox("Izaberite utakmicu", list(match_by_id), format_func=lambda key: match_by_id[key]["match"], key="detail_match")
         match = match_by_id[selected]
@@ -137,23 +137,9 @@ def render_match_details(matches, sources, snapshot=None, operations_enabled=Fal
                 st.link_button("Otvori " + SOURCE_NAMES[source], reference["url"])
         if operations_enabled:
             render_suggestions(client(), match, sources, snapshot, handle_error)
-            render_workflow(client(), match.get("workflow"), handle_error)
             render_timeline(client(), selected, handle_error)
         if st.button("Poveži nazive klubova", key="link-clubs-" + selected, on_click=open_team_aliases, args=(match,)):
             st.rerun(scope="app")
-        ack = match.get("ack")
-        if ack:
-            st.success("Obradu zabeležio " + str(ack.get("name") or ack.get("operator")) + " · " + local_time(ack.get("at"), True))
-            st.write(ack.get("note", ""))
-        with st.form("review-" + selected):
-            note = st.text_area("Napomena operatera", value=ack.get("note", "") if ack else "", max_chars=1000, key="note-" + selected)
-            if st.form_submit_button("Sačuvaj obradu"):
-                try:
-                    client().review(selected, note)
-                    st.success("Obrada je sačuvana na serveru. Neslaganje ostaje vidljivo.")
-                    st.rerun()
-                except ApiError as error:
-                    handle_error(error)
 
 
 @st.fragment(run_every="15s")
@@ -165,7 +151,7 @@ def monitor_page():
     if st.session_state.get("operation_notice"):
         st.success(st.session_state.pop("operation_notice"))
     if data.get("storage", {}).get("state") not in (None, "ready"):
-        st.error("Zapisivanje podataka nije potvrđeno. Proveri bazu u Podešavanjima pre obrade slučaja.")
+        st.error("Zapisivanje podataka nije potvrđeno. Proveri status baze u Podešavanjima.")
     if not snapshot:
         st.info("Još nema unetih mečeva. Otvorite „Uvoz mečeva“ u levom meniju.")
         return
@@ -217,7 +203,7 @@ def monitor_page():
         render_match_details(shown, sources, snapshot, bool(data.get("operations")))
     else:
         st.info("Nema mečeva za izabrane filtere.")
-    st.caption("Crveno: neslaganje · zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci. Oznaka obrade ne menja rezultat.")
+    st.caption("Crveno: neslaganje · zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci.")
 
 
 def import_page():
@@ -285,12 +271,6 @@ def history_page():
         st.download_button("Preuzmi istoriju provera (CSV)", frame.to_csv(index=False).encode("utf-8-sig"), "scoreguard-provere.csv", "text/csv")
     else:
         st.info("Provera još nije izvršena.")
-    reviews = [{"Vreme": local_time(event["at"], True), "Operater": event.get("name") or event["operator"], "Meč": event.get("match") or event["matchId"], "Napomena": event["note"]} for event in snapshot.get("reviewEvents", [])]
-    st.subheader("Evidencija obrade")
-    if reviews:
-        st.dataframe(pd.DataFrame(reviews), hide_index=True, use_container_width=True)
-    else:
-        st.caption("Još nema napomena o obradi.")
 
 
 def settings_page():

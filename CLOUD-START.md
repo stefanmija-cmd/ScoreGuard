@@ -71,7 +71,7 @@ Ako ste aplikaciju već objavili, otvorite `Manage app` → `Settings` → `Secr
 7. Izaberite Flashscore, Futbol24 ili oba izvora i uključite automatsku proveru. API-Football ostaje dodatna opcija koja zahteva zaseban ključ i odgovarajući plan.
 8. Kliknite `Uvezi mečeve`, zatim otvorite `Pregled mečeva` i kliknite `Proveri sada`.
 
-Mečevi svakog operatera, napomene i istorija odvojeni su prema prijavljenom nalogu. Samo osvežavanje stranice može tražiti novu prijavu; ono samo po sebi ne briše spisak.
+Mečevi svakog operatera i istorija odvojeni su prema prijavljenom nalogu. Samo osvežavanje stranice može tražiti novu prijavu; ono samo po sebi ne briše spisak.
 
 ## 7. Šta proveriti tokom testa
 
@@ -124,7 +124,7 @@ Na ovom ekranu možete ukloniti pogrešnu vezu, preuzeti JSON kopiju ili vratiti
 
 Interna oznaka `FT / 2nd half` može ostati i posle kraja utakmice. Ako izvor potvrdi završen meč, a rezultat i poluvreme se poklapaju, ova oznaka sama više ne izaziva crveno neslaganje. Pravilo važi i za već sačuvane uvoze iz internog programa. Nedostajući ili zastareli podaci ostaju neprovereni, a stvarne razlike u rezultatu i poluvremenu ostaju neslaganja.
 
-Objašnjenje statusa prikazuje se u **Detaljima meča i obradi neslaganja**. Posle ažuriranja koda na GitHub-u sačekajte da Streamlit učita izmene; ako i dalje prikazuje staru verziju, izaberite **Manage app → Reboot app**, pa u aplikaciji kliknite **Proveri sada**.
+Objašnjenje statusa prikazuje se u **Detaljima meča**. Tabela prikazuje rezultate i starost internog unosa, bez kolona Prioritet, Obrada i operatera zaduženog za slučaj. Detalji sadrže poređenje, izvore, način povezivanja klubova i istoriju rezultata. Posle ažuriranja koda na GitHub-u sačekajte da Streamlit učita izmene; ako i dalje prikazuje staru verziju, izaberite **Manage app → Reboot app**, pa u aplikaciji kliknite **Proveri sada**.
 
 Ranije dodate mape kroz `TEAM_ALIASES_JSON` ostaju aktivne. Ako postoje, ekran prikazuje obaveštenje; uklanjanje nove veze iz panela ne briše ranija pravila iz tih podešavanja.
 
@@ -138,7 +138,7 @@ Ranije dodate mape kroz `TEAM_ALIASES_JSON` ostaju aktivne. Ako postoje, ekran p
 
 Dozvoljeno je do 1.000 utakmica po operateru. Tabela prikazuje do 100 po strani, a provera obuhvata ceo spisak. Svaki operater ima svoj interni unos. Rezultati izvora preuzimaju se zajednički po izvoru i datumu i koriste za poređenje svih spiskova. Uobičajeni interval je 300 sekundi. Ručni zahtevi unutar 15 sekundi dele poslednje preuzimanje; njegovo vreme se ne podmlađuje. Poštuju se i starost odgovora samog izvora, blokade i kvote.
 
-Nova stranica **Zajednička neslaganja** omogućava preuzimanje, oslobađanje i zatvaranje slučaja sa napomenom. Istovremeno preuzimanje istog slučaja dobija samo jednog operatera. Obrada ne menja utvrđeno neslaganje. Nova različita razlika može ponovo otvoriti slučaj. Administrator može objaviti potvrđene nazive klubova za sve operatere; ostali imaju i lična povezivanja.
+Stranica **Zajednička neslaganja** prikazuje iste praćene mečeve sa više operaterskih spiskova, poređenje i vreme preuzimanja. Služi za monitoring: preuzimanje, zatvaranje i napomene obrade uklonjeni su iz panela. Raniji status obrade ne skriva poznato neslaganje. Administrator može objaviti potvrđene nazive klubova za sve operatere; ostali imaju i lična povezivanja.
 
 Za postojeća dva naloga nije potrebno menjati Secrets. Dodatni stvarni nalozi nisu automatski kreirani: za njih su potrebna odabrana korisnička imena i generisana konfiguracija naloga. Test opterećenja koristi izmišljene operatere i kontrolisane rezultate. On proverava algoritam i zajedničko preuzimanje, bez garancije da Community Cloud može trajno opslužiti 12 aktivnih Streamlit sesija i sve stvarne zahteve.
 
