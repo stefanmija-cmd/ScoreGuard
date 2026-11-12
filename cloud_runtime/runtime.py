@@ -23,22 +23,31 @@ def account_config(raw):
         if value.get("version") != 1 or not value.get("accounts"):
             raise ValueError
         for account in value["accounts"]:
-            if not all(key in account for key in ("username", "passwordHash", "salt", "iterations")):
+            if not all(
+                key in account for key in ("username", "passwordHash", "salt", "iterations")
+            ):
                 raise ValueError
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
     except (ValueError, TypeError, AttributeError, KeyError):
-        raise CloudRuntimeError("Neispravna konfiguracija naloga. U Streamlit Secrets nalepite ceo sadržaj preuzetog cloud-secrets.toml fajla.") from None
+        raise CloudRuntimeError(
+            "Neispravna konfiguracija naloga. U Streamlit Secrets nalepite ceo sadržaj preuzetog cloud-secrets.toml fajla."
+        ) from None
 
 
 def node_binary():
     try:
         import nodejs_wheel
-        binary = Path(nodejs_wheel.__file__).parent / ("node.exe" if os.name == "nt" else "bin/node")
+
+        binary = Path(nodejs_wheel.__file__).parent / (
+            "node.exe" if os.name == "nt" else "bin/node"
+        )
         if binary.is_file():
             return str(binary)
     except ImportError:
         pass
-    raise CloudRuntimeError("Nedostaje runtime za servis. Objavite ceo Cloud paket sa njegovim requirements.txt fajlom i izaberite Python 3.12.")
+    raise CloudRuntimeError(
+        "Nedostaje runtime za servis. Objavite ceo Cloud paket sa njegovim requirements.txt fajlom i izaberite Python 3.12."
+    )
 
 
 class CloudRuntime:
@@ -50,16 +59,24 @@ class CloudRuntime:
             if not isinstance(aliases, dict):
                 raise ValueError
             if "teams" in aliases:
-                aliases = {source: {"teams": aliases["teams"]} for source in ("flash", "f24", "api")}
+                aliases = {
+                    source: {"teams": aliases["teams"]} for source in ("flash", "f24", "api")
+                }
             for source in ("flash", "f24", "api", "sofa"):
                 teams = aliases.get(source, {}).get("teams", {})
-                if not isinstance(teams, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in teams.items()):
+                if not isinstance(teams, dict) or not all(
+                    isinstance(k, str) and isinstance(v, str) for k, v in teams.items()
+                ):
                     raise ValueError
         except (ValueError, TypeError, AttributeError):
-            raise CloudRuntimeError("TEAM_ALIASES_JSON mora biti ispravan JSON sa mapom teams.") from None
+            raise CloudRuntimeError(
+                "TEAM_ALIASES_JSON mora biti ispravan JSON sa mapom teams."
+            ) from None
         self.aliases_json = json.dumps(aliases)
         key = hashlib.sha256(str(self.project).encode()).hexdigest()[:16]
-        self.directory = Path(directory or Path(tempfile.gettempdir()) / ("scoreguard-cloud-" + key))
+        self.directory = Path(
+            directory or Path(tempfile.gettempdir()) / ("scoreguard-cloud-" + key)
+        )
         self.directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.lock = threading.RLock()
         self.stopped = threading.Event()
@@ -89,8 +106,14 @@ class CloudRuntime:
         self._write_private("aliases.json", self.aliases_json)
         boot_id = uuid.uuid4().hex
         environment = os.environ.copy()
-        environment.update({"SCOREGUARD_CLOUD_DATA_DIR": str(self.directory), "SCOREGUARD_CLOUD_BOOT_ID": boot_id,
-                            "SCOREGUARD_CLOUD_PARENT_PID": str(os.getpid()), "NODE_USE_ENV_PROXY": "1"})
+        environment.update(
+            {
+                "SCOREGUARD_CLOUD_DATA_DIR": str(self.directory),
+                "SCOREGUARD_CLOUD_BOOT_ID": boot_id,
+                "SCOREGUARD_CLOUD_PARENT_PID": str(os.getpid()),
+                "NODE_USE_ENV_PROXY": "1",
+            }
+        )
         if self._log:
             self._log.close()
         log_path = self.directory / "service.log"
@@ -98,9 +121,18 @@ class CloudRuntime:
             log_path.unlink()
         self._log = open(log_path, "ab")
         log_path.chmod(0o600)
-        self.process = subprocess.Popen([node_binary(), "--max-old-space-size=256", str(self.project / "cloud_runtime/server.mjs")],
-                                        cwd=self.project, env=environment, stdin=subprocess.DEVNULL,
-                                        stdout=self._log, stderr=subprocess.STDOUT)
+        self.process = subprocess.Popen(
+            [
+                node_binary(),
+                "--max-old-space-size=256",
+                str(self.project / "cloud_runtime/server.mjs"),
+            ],
+            cwd=self.project,
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            stdout=self._log,
+            stderr=subprocess.STDOUT,
+        )
         deadline = time.monotonic() + (45 if environment.get("SCOREGUARD_STORAGE_URL") else 15)
         session = requests.Session()
         session.trust_env = False  # Only this loopback health request bypasses outbound proxies.
@@ -111,12 +143,26 @@ class CloudRuntime:
                 try:
                     ready = json.loads((self.directory / "ready.json").read_text())
                     location = urlsplit(ready["baseUrl"])
-                    if ready["bootId"] != boot_id or location.hostname != "127.0.0.1" or location.scheme != "http":
+                    if (
+                        ready["bootId"] != boot_id
+                        or location.hostname != "127.0.0.1"
+                        or location.scheme != "http"
+                    ):
                         raise ValueError
                     response = session.get(ready["baseUrl"] + "/healthz", timeout=1)
                     if response.ok and response.json().get("service") == "scoreguard-scraper":
-                        self.base_url, self.origin, self.started_at = ready["baseUrl"], ready["origin"], ready["startedAt"]
-                        os.environ.update({"BACKEND_URL": self.base_url, "PUBLIC_ORIGIN": self.origin, "SCOREGUARD_CLOUD": "1"})
+                        self.base_url, self.origin, self.started_at = (
+                            ready["baseUrl"],
+                            ready["origin"],
+                            ready["startedAt"],
+                        )
+                        os.environ.update(
+                            {
+                                "BACKEND_URL": self.base_url,
+                                "PUBLIC_ORIGIN": self.origin,
+                                "SCOREGUARD_CLOUD": "1",
+                            }
+                        )
                         return
                 except (OSError, ValueError, KeyError, requests.RequestException):
                     pass
@@ -126,7 +172,9 @@ class CloudRuntime:
         if self.process.poll() is None:
             self.process.terminate()
             self.process.wait(timeout=5)
-        raise CloudRuntimeError("Servis nije pokrenut. Proverite Streamlit Secrets i da je ceo Cloud paket prenet na GitHub, pa izaberite Reboot app.")
+        raise CloudRuntimeError(
+            "Servis nije pokrenut. Proverite Streamlit Secrets i da je ceo Cloud paket prenet na GitHub, pa izaberite Reboot app."
+        )
 
     def start(self):
         with self.lock:
@@ -136,9 +184,13 @@ class CloudRuntime:
                 self.close()
                 if isinstance(error, CloudRuntimeError):
                     raise
-                raise CloudRuntimeError("Servis nije pokrenut. Proverite da su ceo Cloud paket i requirements.txt na GitHub-u, pa izaberite Reboot app.") from None
+                raise CloudRuntimeError(
+                    "Servis nije pokrenut. Proverite da su ceo Cloud paket i requirements.txt na GitHub-u, pa izaberite Reboot app."
+                ) from None
             if self._thread is None:
-                self._thread = threading.Thread(target=self._supervise, name="scoreguard-cloud-services", daemon=True)
+                self._thread = threading.Thread(
+                    target=self._supervise, name="scoreguard-cloud-services", daemon=True
+                )
                 self._thread.start()
                 atexit.register(self.close)
         return self
@@ -153,13 +205,24 @@ class CloudRuntime:
                         self.restarts += 1
                         self._start_locked()
                     except (CloudRuntimeError, OSError, subprocess.SubprocessError) as error:
-                        self.error = str(error) if isinstance(error, CloudRuntimeError) else "Ponovno pokretanje servisa nije uspelo. Izaberite Reboot app."
+                        self.error = (
+                            str(error)
+                            if isinstance(error, CloudRuntimeError)
+                            else "Ponovno pokretanje servisa nije uspelo. Izaberite Reboot app."
+                        )
 
     def status(self):
         with self.lock:
-            return {"running": bool(self.process and self.process.poll() is None and not self.error),
-                    "startedAt": self.started_at, "restarts": self.restarts, "error": self.error,
-                    "durableStorage": bool(os.environ.get("SCOREGUARD_STORAGE_URL") and os.environ.get("SCOREGUARD_STORAGE_KEY"))}
+            return {
+                "running": bool(self.process and self.process.poll() is None and not self.error),
+                "startedAt": self.started_at,
+                "restarts": self.restarts,
+                "error": self.error,
+                "durableStorage": bool(
+                    os.environ.get("SCOREGUARD_STORAGE_URL")
+                    and os.environ.get("SCOREGUARD_STORAGE_KEY")
+                ),
+            }
 
     def close(self):
         self.stopped.set()

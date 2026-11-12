@@ -20,6 +20,7 @@ Spisak može imati do **1.000 utakmica**. Pregled prikazuje do 100 po strani; pr
 ## 2. Kako se mečevi povezuju i rezultati porede
 
 - Meč se povezuje po domaćinu, gostu, datumu i vremenu početka. Redosled domaćina i gosta mora biti ispravan.
+- Potvrđene veze naziva imaju prednost nad automatskim prepoznavanjem selekcije. Slovo F u nazivu kluba samo po sebi ne označava žensku ekipu.
 - Najpre se traže identični nazivi ili sačuvana povezivanja. Ako toga nema, meč se automatski povezuje kada je sličnost **svakog kluba najmanje 80%**, uz isti datum, vreme i selekciju. U detaljima vidiš izvorne nazive i procenat za oba kluba.
 - Ako postoji blizak drugi kandidat, razlika u prosečnoj sličnosti mora biti najmanje **5 procentnih poena**. U suprotnom meč ostaje za ručnu potvrdu. Naziv takmičenja i rezultat ne odlučuju koji je meč izabran.
 - Naziv takmičenja služi za prikaz. Različiti nazivi, npr. „Venecuela Kup“ i „Copa Venezuela“, ne sprečavaju povezivanje.
@@ -44,10 +45,10 @@ Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i pošt
 
 ## 4. Šta znače statusi
 
-| Status | Značenje i postupak |
-|---|---|
-| **Usaglašeno — zeleno** | Svi izabrani izvori potvrđuju unesene podatke koji se proveravaju i imaju dovoljno sveže podatke. |
-| **Neslaganje — crveno** | Postoji poznata razlika u rezultatu, poluvremenu ili periodu utakmice. Otvori detalje i proveri meč. |
+| Status                    | Značenje i postupak                                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Usaglašeno — zeleno**   | Svi izabrani izvori potvrđuju unesene podatke koji se proveravaju i imaju dovoljno sveže podatke.                                      |
+| **Neslaganje — crveno**   | Postoji poznata razlika u rezultatu, poluvremenu ili periodu utakmice. Otvori detalje i proveri meč.                                   |
 | **Nije provereno — žuto** | Meč nije povezan, podatak nedostaje, izvor nije dostupan ili je podatak zastareo. Ovaj status ne potvrđuje tačnost internog rezultata. |
 
 Podaci izvora stariji od **5 minuta i 30 sekundi** više ne potvrđuju rezultat. Uvek pogledaj vreme poslednje provere. Ako je izabran jedan dostupan i jedan nedostupan izvor, potpuno usaglašavanje nije potvrđeno; poznata razlika se i dalje prikazuje kao neslaganje.

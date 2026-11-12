@@ -8,13 +8,30 @@ from functools import lru_cache
 import pandas as pd
 import streamlit as st
 from streamlit_panel.api_client import ApiError
-from streamlit_panel.presentation import SOURCE_NAMES, LEGACY_SOURCE_NAMES, STATUS_NAMES, input_age, local_time
+from streamlit_panel.presentation import (
+    SOURCE_NAMES,
+    LEGACY_SOURCE_NAMES,
+    STATUS_NAMES,
+    input_age,
+    local_time,
+)
 
 
 def detect_alerts(matches, previous):
-    current = {str(m.get("date", "")) + "|" + str(m.get("internalId") or m.get("match") or m["id"]) + "|" + m.get("time", ""): m.get("alertSignature")
-               for m in matches if m.get("comparisonStatus") == "mismatch" and m.get("alertSignature")}
-    changed = [] if previous is None else [key for key, signature in current.items() if previous.get(key) != signature]
+    current = {
+        str(m.get("date", ""))
+        + "|"
+        + str(m.get("internalId") or m.get("match") or m["id"])
+        + "|"
+        + m.get("time", ""): m.get("alertSignature")
+        for m in matches
+        if m.get("comparisonStatus") == "mismatch" and m.get("alertSignature")
+    }
+    changed = (
+        []
+        if previous is None
+        else [key for key, signature in current.items() if previous.get(key) != signature]
+    )
     return current, changed
 
 
@@ -25,7 +42,16 @@ def alarm_wav():
         output.setnchannels(1)
         output.setsampwidth(2)
         output.setframerate(16000)
-        output.writeframes(b"".join(struct.pack("<h", int(7500 * math.sin(2 * math.pi * (880 if i < 3200 else 660) * i / 16000))) if i < 3200 or i > 4400 else b"\0\0" for i in range(7600)))
+        output.writeframes(
+            b"".join(
+                struct.pack(
+                    "<h", int(7500 * math.sin(2 * math.pi * (880 if i < 3200 else 660) * i / 16000))
+                )
+                if i < 3200 or i > 4400
+                else b"\0\0"
+                for i in range(7600)
+            )
+        )
     return data.getvalue()
 
 
@@ -48,18 +74,42 @@ def render_suggestions(api, match, sources, snapshot, handle_error):
         st.subheader("Predlozi povezivanja · " + SOURCE_NAMES[source])
         st.write("Interno: **" + match["match"] + "**")
         key = match["id"] + "-" + source
-        candidate = st.selectbox("Mogući meč na izvoru", suggestions,
-                                 format_func=lambda item: item["home"] + " – " + item["away"] + " · " + item.get("league", ""), key="suggestion-" + key)
+        candidate = st.selectbox(
+            "Mogući meč na izvoru",
+            suggestions,
+            format_func=lambda item: item["home"]
+            + " – "
+            + item["away"]
+            + " · "
+            + item.get("league", ""),
+            key="suggestion-" + key,
+        )
         if candidate and "homeSimilarity" in candidate and "awaySimilarity" in candidate:
-            st.caption("Sličnost naziva: domaćin " + format(candidate["homeSimilarity"] * 100, ".1f") + "% · gost " + format(candidate["awaySimilarity"] * 100, ".1f") + "%.")
-        st.caption("Potvrdi samo ako su domaćin i gost isti klubovi i iste selekcije. Predlog sam ne potvrđuje rezultat.")
-        shared = st.checkbox("Poveži za sve operatere", key="suggestion-shared-" + key) if st.session_state.get("user", {}).get("role") == "admin" else False
+            st.caption(
+                "Sličnost naziva: domaćin "
+                + format(candidate["homeSimilarity"] * 100, ".1f")
+                + "% · gost "
+                + format(candidate["awaySimilarity"] * 100, ".1f")
+                + "%."
+            )
+        st.caption(
+            "Potvrdi samo ako su domaćin i gost isti klubovi i iste selekcije. Predlog sam ne potvrđuje rezultat."
+        )
+        shared = (
+            st.checkbox("Poveži za sve operatere", key="suggestion-shared-" + key)
+            if st.session_state.get("user", {}).get("role") == "admin"
+            else False
+        )
         if st.button("Potvrdi ovaj par timova", key="suggestion-confirm-" + key):
             try:
-                api.confirm_match(match["id"], source, candidate["eventId"], "shared" if shared else "own")
+                api.confirm_match(
+                    match["id"], source, candidate["eventId"], "shared" if shared else "own"
+                )
                 if snapshot:
                     api.check(snapshot["watch"], snapshot["enabled"])
-                st.session_state["operation_notice"] = "Povezivanje je sačuvano i pokrenuta je nova provera."
+                st.session_state["operation_notice"] = (
+                    "Povezivanje je sačuvano i pokrenuta je nova provera."
+                )
                 st.rerun()
             except ApiError as error:
                 handle_error(error)
@@ -77,20 +127,28 @@ def render_timeline(api, match_id, handle_error):
         return
     rows = []
     for event in events:
-        row = {"Vreme": local_time(event.get("at"), True), "Interno": event.get("internal", {}).get("score") or "—",
-               "Interno · poluvreme": event.get("internal", {}).get("ht") or "—", "Provera": STATUS_NAMES.get(event.get("comparisonStatus"), "Nije provereno")}
+        row = {
+            "Vreme": local_time(event.get("at"), True),
+            "Interno": event.get("internal", {}).get("score") or "—",
+            "Interno · poluvreme": event.get("internal", {}).get("ht") or "—",
+            "Provera": STATUS_NAMES.get(event.get("comparisonStatus"), "Nije provereno"),
+        }
         for source, ref in event.get("refs", {}).items():
             label = SOURCE_NAMES.get(source, LEGACY_SOURCE_NAMES.get(source, source))
             row[label] = ref.get("score") or "—"
             row[label + " · poluvreme"] = ref.get("ht") or "—"
-        row["Poreklo"] = "Vraćena rezervna kopija" if event.get("restoredAt") else "Provera aplikacije"
+        row["Poreklo"] = (
+            "Vraćena rezervna kopija" if event.get("restoredAt") else "Provera aplikacije"
+        )
         rows.append(row)
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
 
 
 def render_cases(api, handle_error):
     st.title("Zajednička neslaganja")
-    st.caption("Zajednički pregled praćenih neslaganja i rezultata poslednjih provera za sve operatere.")
+    st.caption(
+        "Zajednički pregled praćenih neslaganja i rezultata poslednjih provera za sve operatere."
+    )
     query = st.text_input("Pretraži zajednička neslaganja", max_chars=150, key="case_search")
     page = int(st.number_input("Strana", min_value=1, value=1, step=1, key="case_page"))
     try:
@@ -100,54 +158,112 @@ def render_cases(api, handle_error):
         handle_error(error)
         return
     cases = data.get("cases", [])
-    st.caption("Ukupno praćenih mečeva za izabranu pretragu: " + str(data.get("total", 0)) + " · do 100 po strani")
+    st.caption(
+        "Ukupno praćenih mečeva za izabranu pretragu: "
+        + str(data.get("total", 0))
+        + " · do 100 po strani"
+    )
     if not cases:
         st.info("Nema mečeva na ovoj strani. Ako si promenio pretragu, vrati se na prvu stranu.")
         return
     rows = []
     for item in cases:
         evidence = item.get("evidence") or {}
-        rows.append({"Datum": evidence.get("date", ""), "Utakmica": evidence.get("match", ""),
-                     "Interno": evidence.get("internal", {}).get("score") or "—", "Provera": STATUS_NAMES.get(item["comparisonStatus"], "Nije provereno"),
-                     "Spiskova": item.get("operatorCount", 1)})
+        rows.append(
+            {
+                "Datum": evidence.get("date", ""),
+                "Utakmica": evidence.get("match", ""),
+                "Interno": evidence.get("internal", {}).get("score") or "—",
+                "Provera": STATUS_NAMES.get(item["comparisonStatus"], "Nije provereno"),
+                "Spiskova": item.get("operatorCount", 1),
+            }
+        )
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    render_sound([{"id": c["id"], "match": c.get("evidence", {}).get("match", c["id"]), "date": c.get("evidence", {}).get("date", ""), "comparisonStatus": c["comparisonStatus"], "alertSignature": c.get("evidence", {}).get("signature")} for c in cases], "cases")
+    render_sound(
+        [
+            {
+                "id": c["id"],
+                "match": c.get("evidence", {}).get("match", c["id"]),
+                "date": c.get("evidence", {}).get("date", ""),
+                "comparisonStatus": c["comparisonStatus"],
+                "alertSignature": c.get("evidence", {}).get("signature"),
+            }
+            for c in cases
+        ],
+        "cases",
+    )
     with st.expander("Detalji zajedničkog meča", expanded=True):
-        selected = st.selectbox("Izaberi meč", cases, format_func=lambda item: item.get("evidence", {}).get("match", item["id"]), key="selected_case")
+        selected = st.selectbox(
+            "Izaberi meč",
+            cases,
+            format_func=lambda item: item.get("evidence", {}).get("match", item["id"]),
+            key="selected_case",
+        )
         st.write(selected.get("comparisonReason") or "Nema pouzdanih podataka za poređenje.")
         evidence = selected.get("evidence") or {}
-        st.caption("Interni snimak " + input_age(evidence.get("importedAt")) + " · proveru pokrenuo " + str(evidence.get("operator", "—")))
+        st.caption(
+            "Interni snimak "
+            + input_age(evidence.get("importedAt"))
+            + " · proveru pokrenuo "
+            + str(evidence.get("operator", "—"))
+        )
         for source, ref in evidence.get("refs", {}).items():
-            st.write(SOURCE_NAMES.get(source, source) + ": " + (ref.get("score") or "—") + " · poluvreme " + (ref.get("ht") or "—"))
+            st.write(
+                SOURCE_NAMES.get(source, source)
+                + ": "
+                + (ref.get("score") or "—")
+                + " · poluvreme "
+                + (ref.get("ht") or "—")
+            )
             st.caption("Preuzeto " + local_time(ref.get("checkedAt"), True))
 
 
 def render_backup(api, storage, handle_error):
     st.subheader("Čuvanje podataka i rezervna kopija")
     if storage.get("durable"):
-        st.success("Povezana je spoljna baza. Podaci se čuvaju i nakon ponovnog kreiranja Cloud instance.")
+        st.success(
+            "Povezana je spoljna baza. Podaci se čuvaju i nakon ponovnog kreiranja Cloud instance."
+        )
     else:
-        st.warning("Podaci su lokalni u ovoj testnoj instanci i mogu biti izgubljeni. Preuzmi rezervnu kopiju pre važnih izmena ili ponovnog kreiranja aplikacije.")
+        st.warning(
+            "Podaci su lokalni u ovoj testnoj instanci i mogu biti izgubljeni. Preuzmi rezervnu kopiju pre važnih izmena ili ponovnog kreiranja aplikacije."
+        )
     if storage.get("state") not in (None, "ready"):
         st.error("Zapisivanje podataka nije potvrđeno. Proveri status baze.")
     if st.button("Pripremi rezervnu kopiju", key="prepare_backup"):
         try:
-            st.session_state["backup_bytes"] = json.dumps(api.backup(), ensure_ascii=False, indent=2).encode("utf-8")
+            st.session_state["backup_bytes"] = json.dumps(
+                api.backup(), ensure_ascii=False, indent=2
+            ).encode("utf-8")
         except ApiError as error:
             handle_error(error)
     if st.session_state.get("backup_bytes"):
-        st.download_button("Preuzmi rezervnu kopiju", st.session_state["backup_bytes"], "scoreguard-rezervna-kopija.json", "application/json")
-    st.caption("Kopija sadrži tvoj spisak, povezivanja i istoriju promena. Administratorska kopija uključuje i zajednička povezivanja. Nalozi, lozinke i pristupni ključevi nisu uključeni.")
+        st.download_button(
+            "Preuzmi rezervnu kopiju",
+            st.session_state["backup_bytes"],
+            "scoreguard-rezervna-kopija.json",
+            "application/json",
+        )
+    st.caption(
+        "Kopija sadrži tvoj spisak, povezivanja i istoriju promena. Administratorska kopija uključuje i zajednička povezivanja. Nalozi, lozinke i pristupni ključevi nisu uključeni."
+    )
     with st.expander("Vrati rezervnu kopiju"):
-        uploaded = st.file_uploader("Izaberi scoreguard-rezervna-kopija.json", type=["json"], key="backup_file")
-        confirmed = st.checkbox("Razumem da će moj aktivni spisak biti zamenjen, a automatika pauzirana.", key="backup_confirmed")
+        uploaded = st.file_uploader(
+            "Izaberi scoreguard-rezervna-kopija.json", type=["json"], key="backup_file"
+        )
+        confirmed = st.checkbox(
+            "Razumem da će moj aktivni spisak biti zamenjen, a automatika pauzirana.",
+            key="backup_confirmed",
+        )
         if st.button("Vrati kopiju", disabled=uploaded is None, key="restore_backup"):
             try:
                 if not confirmed or uploaded.size > 12 * 1024 * 1024:
                     raise ValueError
                 payload = json.loads(uploaded.getvalue())
                 api.restore_backup(payload, confirmed)
-                st.session_state["operation_notice"] = "Kopija je vraćena. Pokreni „Proveri sada“ i po potrebi uključi automatiku."
+                st.session_state["operation_notice"] = (
+                    "Kopija je vraćena. Pokreni „Proveri sada“ i po potrebi uključi automatiku."
+                )
                 st.rerun()
             except (ValueError, TypeError, UnicodeError):
                 st.error("Potvrdi vraćanje i izaberi važeću JSON kopiju do 12 MB.")

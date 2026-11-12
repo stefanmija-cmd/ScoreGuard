@@ -1,0 +1,11 @@
+dist/
+node_modules/
+outputs/
+data/
+secrets/
+.sites-runtime/
+.openai/
+.devcontainer/
+tests/fixtures/
+UPUTSTVO-*.html
+package-lock.json

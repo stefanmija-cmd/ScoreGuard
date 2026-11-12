@@ -1,0 +1,486 @@
+{
+  "live": {
+    "datetime": null,
+    "start": "2026-11-10T23:00:00+00:00",
+    "end": "2026-11-12T05:00:00+00:00",
+    "meta": {
+      "name": "live",
+      "id": null,
+      "live": false
+    },
+    "categories": {
+      "233": {
+        "name": "El Salvador",
+        "name_short": "SLV",
+        "slug": "national/El-Salvador/Primera-Division/2026-2027"
+      },
+      "97": {
+        "name": "Uruguay",
+        "name_short": "URU",
+        "slug": "national/Uruguay/Primera-Division/2026"
+      },
+      "247": {
+        "name": "International",
+        "name_short": "INT",
+        "slug": "international/International/Friendly/2026"
+      },
+      "36": {
+        "name": "UEFA",
+        "name_short": "UEFA",
+        "slug": "international/UEFA/Euro-Championship/2024"
+      },
+      "88": {
+        "name": "Ukraine",
+        "name_short": "UKR",
+        "slug": "national/Ukraine/Vyscha-Liga/2026-2027"
+      },
+      "71": {
+        "name": "Türkiye",
+        "name_short": "TUR",
+        "slug": "national/Turkiye/Super-Lig/2026-2027"
+      },
+      "123": {
+        "name": "Turkmenistan",
+        "name_short": "TKM",
+        "slug": "national/Turkmenistan/Yokary-Liga/2026"
+      },
+      "73": {
+        "name": "Belarus",
+        "name_short": "BLR",
+        "slug": "national/Belarus/Vyscha-Liga/2026"
+      },
+      "80": {
+        "name": "Italy",
+        "name_short": "ITA",
+        "slug": "national/Italy/Serie-A/2026-2027"
+      },
+      "47": {
+        "name": "Lithuania",
+        "name_short": "LIT",
+        "slug": "national/Lithuania/A-Lyga/2026"
+      }
+    },
+    "leagues": {
+      "894": {
+        "name": "Liga de Ascenso de El Salvador",
+        "name_short": "D2",
+        "fg": "fff",
+        "bg": "00209f",
+        "slug": "national/El-Salvador/Liga-de-Ascenso-de-El-Salvador/2026-2027",
+        "type": 3,
+        "is_lower": true
+      },
+      "1150": {
+        "name": "Copa Uruguay",
+        "name_short": "Cup",
+        "fg": "fff",
+        "bg": "5274b3",
+        "slug": "national/Uruguay/Copa-Uruguay/2026",
+        "type": 3,
+        "is_lower": false
+      },
+      "471": {
+        "name": "Friendly",
+        "name_short": "FRL",
+        "fg": "fff",
+        "bg": "374f93",
+        "slug": "international/International/Friendly/2026",
+        "type": 2,
+        "is_lower": false
+      },
+      "187": {
+        "name": "Persha Liga",
+        "name_short": "D2",
+        "fg": "000",
+        "bg": "e6d557",
+        "slug": "national/Ukraine/Persha-Liga/2026-2027",
+        "type": 1,
+        "is_lower": true
+      },
+      "136": {
+        "name": "TFF 3. Lig",
+        "name_short": "D4",
+        "fg": "fff",
+        "bg": "f56269",
+        "slug": "national/Turkiye/TFF-3-Lig/2026-2027",
+        "type": 3,
+        "is_lower": true
+      },
+      "506": {
+        "name": "Euro U19 Qual.",
+        "name_short": "U19",
+        "fg": "fff",
+        "bg": "0b70c1",
+        "slug": "international/UEFA/Euro-U19-Qual/2026-2027",
+        "type": 3,
+        "is_lower": true
+      },
+      "861": {
+        "name": "Yokary Liga",
+        "name_short": "D1",
+        "fg": "fff",
+        "bg": "008000",
+        "slug": "national/Turkmenistan/Yokary-Liga/2026",
+        "type": 1,
+        "is_lower": true
+      },
+      "138": {
+        "name": "Kubok",
+        "name_short": "Cup",
+        "fg": "fff",
+        "bg": "f89733",
+        "slug": "national/Belarus/Kubok/2026-2027",
+        "type": 3,
+        "is_lower": true
+      },
+      "1263": {
+        "name": "Serie D",
+        "name_short": "D4",
+        "fg": "fff",
+        "bg": "799be0",
+        "slug": "national/Italy/Serie-D/2026-2027",
+        "type": 3,
+        "is_lower": true
+      },
+      "274": {
+        "name": "1 Lyga",
+        "name_short": "D2",
+        "fg": "fff",
+        "bg": "6dc754",
+        "slug": "national/Lithuania/1-Lyga/2026",
+        "type": 1,
+        "is_lower": true
+      }
+    },
+    "subleagues": {
+      "87846": {
+        "name": "Apertura Grupo A Occidente",
+        "name_short": "D2",
+        "slug": "national/El-Salvador/Liga-de-Ascenso-de-El-Salvador/2026-2027/Apertura-Grupo-A-Occidente",
+        "type": 1
+      },
+      "88383": {
+        "name": "Quarterfinal",
+        "name_short": "Cup",
+        "slug": "national/Uruguay/Copa-Uruguay/2026/Quarterfinal",
+        "type": 2
+      },
+      "88455": {
+        "name": "Group 3",
+        "name_short": "D4-3",
+        "slug": "national/Turkiye/TFF-3-Lig/2026-2027/Group-3",
+        "type": 1
+      },
+      "86537": {
+        "name": "Round 2",
+        "name_short": "Cup",
+        "slug": "national/Belarus/Kubok/2026-2027/Round-2",
+        "type": 2
+      },
+      "85593": {
+        "name": "R2 League A Group 4",
+        "name_short": "U19Q",
+        "slug": "international/UEFA/Euro-U19-Qual/2026-2027/R2-League-A-Group-4",
+        "type": 1
+      },
+      "88557": {
+        "name": "Girone G",
+        "name_short": "D4G",
+        "slug": "national/Italy/Serie-D/2026-2027/Girone-G",
+        "type": 1
+      },
+      "85590": {
+        "name": "R2 League A Group 1",
+        "name_short": "U19Q",
+        "slug": "international/UEFA/Euro-U19-Qual/2026-2027/R2-League-A-Group-1",
+        "type": 1
+      },
+      "88964": {
+        "name": "1st place decider",
+        "name_short": "D2PO",
+        "slug": "national/Lithuania/1-Lyga/2026/1st-place-decider",
+        "type": 2
+      }
+    },
+    "statuses": {
+      "5": {
+        "name": "FT",
+        "name_short": "FT",
+        "is_ended": true,
+        "in_play": false
+      },
+      "15": {
+        "name": "AP w/ET",
+        "name_short": "AP",
+        "is_ended": true,
+        "in_play": false
+      },
+      "11": {
+        "name": "Postp.",
+        "name_short": "Postp.",
+        "is_ended": true,
+        "in_play": false
+      },
+      "16": {
+        "name": "Walkover",
+        "name_short": "W.O.",
+        "is_ended": true,
+        "in_play": false
+      },
+      "1": {
+        "name": "---",
+        "name_short": "---",
+        "is_ended": false,
+        "in_play": false
+      },
+      "8": {
+        "name": "AET",
+        "name_short": "AET",
+        "is_ended": true,
+        "in_play": false
+      },
+      "18": {
+        "name": "Cancelled",
+        "name_short": "CANC",
+        "is_ended": true,
+        "in_play": false
+      },
+      "10": {
+        "name": "Abandoned",
+        "name_short": "ABD",
+        "is_ended": true,
+        "in_play": false
+      },
+      "9": {
+        "name": "AP",
+        "name_short": "AP",
+        "is_ended": true,
+        "in_play": false
+      }
+    },
+    "matches": {
+      "3418493": {
+        "category_id": 233,
+        "league_id": 894,
+        "league_sub_id": 87846,
+        "status_id": 5,
+        "date": "2026-11-10T23:00:00+00:00",
+        "slug": "2026/11/10/national/El-Salvador/Liga-de-Ascenso-de-El-Salvador/2026-2027/Apertura-Grupo-A-Occidente/El-Roble/vs/Academia-BP-SLV",
+        "score1": "2-1",
+        "score2": "2-0",
+        "team1": {
+          "name": "CD El Roble",
+          "name_short": "El Roble",
+          "slug": "El-Salvador/CD-El-Roble"
+        },
+        "team2": {
+          "name": "AD Academia BP (SLV)",
+          "name_short": "Academia BP SLV",
+          "slug": "El-Salvador/AD-Academia-BP-SLV"
+        },
+        "details": true
+      },
+      "3446211": {
+        "category_id": 97,
+        "league_id": 1150,
+        "league_sub_id": 88383,
+        "status_id": 15,
+        "date": "2026-11-11T00:00:00+00:00",
+        "slug": "2026/11/11/national/Uruguay/Copa-Uruguay/2026/Quarterfinal/Liverpool-URU/vs/Juventud-LP-URU",
+        "score1": "1-1",
+        "score2": "p.0-3",
+        "team1": {
+          "name": "Liverpool (URU)",
+          "name_short": "Liverpool URU",
+          "slug": "Uruguay/Liverpool-URU"
+        },
+        "team2": {
+          "name": "Juventud Las Piedras",
+          "name_short": "Juventud LP (URU)",
+          "slug": "Uruguay/Juventud-Las-Piedras"
+        },
+        "details": true
+      },
+      "3362635": {
+        "category_id": 88,
+        "league_id": 187,
+        "status_id": 11,
+        "date": "2026-11-11T09:30:00+00:00",
+        "slug": "2026/11/11/national/Ukraine/Persha-Liga/2026-2027/FC-Chernigiv/vs/Inhulets-Petr",
+        "score1": "P-P",
+        "team1": {
+          "name": "FC Chernigiv",
+          "name_short": "FC Chernigiv",
+          "slug": "Ukraine/FC-Chernigiv"
+        },
+        "team2": {
+          "name": "Inhulets Petrove",
+          "name_short": "Inhulets Petr.",
+          "slug": "Ukraine/Inhulets-Petrove"
+        },
+        "details": true
+      },
+      "3429333": {
+        "category_id": 71,
+        "league_id": 136,
+        "league_sub_id": 88455,
+        "status_id": 16,
+        "date": "2026-11-11T10:00:00+00:00",
+        "slug": "2026/11/11/national/Turkiye/TFF-3-Lig/2026-2027/Group-3/Yeni-Malaty/vs/Kirikkale",
+        "score1": "0-3 w.o.",
+        "team1": {
+          "name": "Yeni Malatyaspor",
+          "name_short": "Yeni Malaty.",
+          "slug": "Turkiye/Yeni-Malatyaspor"
+        },
+        "team2": {
+          "name": "Kırıkkale FK",
+          "name_short": "Kirikkale",
+          "slug": "Turkiye/Kirikkale-FK"
+        },
+        "details": true
+      },
+      "3396671": {
+        "category_id": 123,
+        "league_id": 861,
+        "status_id": 1,
+        "date": "2026-11-11T10:30:00+00:00",
+        "slug": "2026/11/11/national/Turkmenistan/Yokary-Liga/2026/Merw-FK/vs/Ahal-FK",
+        "team1": {
+          "name": "Merw FK",
+          "name_short": "Merw FK",
+          "slug": "Turkmenistan/Merw-FK"
+        },
+        "team2": {
+          "name": "Ahal FK",
+          "name_short": "Ahal FK",
+          "slug": "Turkmenistan/Ahal-FK"
+        },
+        "details": false
+      },
+      "3379356": {
+        "category_id": 73,
+        "league_id": 138,
+        "league_sub_id": 86537,
+        "status_id": 8,
+        "date": "2026-11-11T11:30:00+00:00",
+        "slug": "2026/11/11/national/Belarus/Kubok/2026-2027/Round-2/FK-Orsha/vs/BATE-Borisov",
+        "score1": "2-3",
+        "score2": "2-2, 2-2",
+        "team1": {
+          "name": "FK Orsha",
+          "name_short": "FK Orsha",
+          "slug": "Belarus/FK-Orsha"
+        },
+        "team2": {
+          "name": "BATE Borisov",
+          "name_short": "BATE Borisov",
+          "slug": "Belarus/BATE-Borisov"
+        },
+        "details": true
+      },
+      "3443172": {
+        "category_id": 247,
+        "league_id": 471,
+        "status_id": 18,
+        "date": "2026-11-11T11:59:00+00:00",
+        "slug": "2026/11/11/international/International/Friendly/2026/Hong-Kong/vs/Kyrgyzstan",
+        "team1": {
+          "name": "Hong Kong",
+          "name_short": "Hong Kong",
+          "slug": "AFC/Hong-Kong"
+        },
+        "team2": {
+          "name": "Kyrgyzstan",
+          "name_short": "Kyrgyzstan",
+          "slug": "AFC/Kyrgyzstan"
+        },
+        "details": true
+      },
+      "3432111": {
+        "category_id": 80,
+        "league_id": 1263,
+        "league_sub_id": 88557,
+        "status_id": 10,
+        "date": "2026-11-11T13:30:00+00:00",
+        "slug": "2026/11/11/national/Italy/Serie-D/2026-2027/Girone-G/Trastevere/vs/Anzio-Calcio",
+        "score1": "2-1",
+        "score2": "0-1, 0-1",
+        "team1": {
+          "name": "Trastevere Calcio",
+          "name_short": "Trastevere",
+          "slug": "Italy/Trastevere-Calcio"
+        },
+        "team2": {
+          "name": "Anzio Calcio 1924",
+          "name_short": "Anzio Calcio",
+          "slug": "Italy/Anzio-Calcio-1924"
+        },
+        "details": true
+      },
+      "3446303": {
+        "category_id": 47,
+        "league_id": 274,
+        "league_sub_id": 88964,
+        "status_id": 9,
+        "date": "2026-11-11T16:30:00+00:00",
+        "slug": "2026/11/11/national/Lithuania/1-Lyga/2026/1st-place-decider/Babrungas/vs/Minija-Kr",
+        "score1": "1-1",
+        "score2": "p.10-9",
+        "team1": {
+          "name": "FK Babrungas",
+          "name_short": "Babrungas",
+          "slug": "Lithuania/FK-Babrungas"
+        },
+        "team2": {
+          "name": "FK Minija Kretinga",
+          "name_short": "Minija Kr.",
+          "slug": "Lithuania/FK-Minija-Kretinga"
+        },
+        "details": true
+      },
+      "3438761": {
+        "category_id": 36,
+        "league_id": 506,
+        "league_sub_id": 85590,
+        "status_id": 5,
+        "date": "2026-11-11T17:00:00+00:00",
+        "slug": "2026/11/11/international/UEFA/Euro-U19-Qual/2026-2027/R2-League-A-Group-1/France-U19/vs/Norway-U19",
+        "score1": "6-0",
+        "score2": "3-0",
+        "team1": {
+          "name": "France U19",
+          "name_short": "France U19",
+          "slug": "UEFA/France-U19"
+        },
+        "team2": {
+          "name": "Norway U19",
+          "name_short": "Norway U19",
+          "slug": "UEFA/Norway-U19"
+        },
+        "details": true
+      },
+      "3438777": {
+        "category_id": 36,
+        "league_id": 506,
+        "league_sub_id": 85593,
+        "status_id": 5,
+        "date": "2026-11-11T17:00:00+00:00",
+        "slug": "2026/11/11/international/UEFA/Euro-U19-Qual/2026-2027/R2-League-A-Group-4/Austria-U19/vs/Belarus-U19",
+        "score1": "0-1",
+        "score2": "0-0",
+        "team1": {
+          "name": "Austria U19",
+          "name_short": "Austria U19",
+          "slug": "UEFA/Austria-U19"
+        },
+        "team2": {
+          "name": "Belarus U19",
+          "name_short": "Belarus U19",
+          "slug": "UEFA/Belarus-U19"
+        },
+        "details": true
+      }
+    }
+  }
+}

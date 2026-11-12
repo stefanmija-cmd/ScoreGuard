@@ -19,7 +19,13 @@ def input_age(value: str | None, now: datetime | None = None) -> str:
         if seconds < -30:
             return "Nepouzdano vreme"
         minutes = max(0, int(seconds // 60))
-        return "pre " + (str(minutes) + " min" if minutes < 60 else str(minutes // 60) + " h" if minutes < 1440 else str(minutes // 1440) + " dana")
+        return "pre " + (
+            str(minutes) + " min"
+            if minutes < 60
+            else str(minutes // 60) + " h"
+            if minutes < 1440
+            else str(minutes // 1440) + " dana"
+        )
     except (TypeError, ValueError):
         return "Nepoznato"
 
@@ -35,7 +41,9 @@ def local_time(value: str | None, include_date: bool = False) -> str:
 
 
 def preview_fingerprint(text: str, date: str, format_name: str) -> str:
-    return hashlib.sha256(json.dumps([text, date, format_name], ensure_ascii=False).encode()).hexdigest()
+    return hashlib.sha256(
+        json.dumps([text, date, format_name], ensure_ascii=False).encode()
+    ).hexdigest()
 
 
 def reference_score(reference: dict | None, half_time: bool = False) -> str:
@@ -49,10 +57,15 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
     result = []
     for match in matches:
         refs = match.get("refs", {})
-        row = {"Datum": match.get("date", ""), "Početak": match["time"],
-               "Šifra": match.get("internalId", "—"), "Utakmica": match["match"],
-               "Takmičenje": match["league"], "Interno": match.get("score") or "—",
-               "Poluvreme": match.get("ht") or "—"}
+        row = {
+            "Datum": match.get("date", ""),
+            "Početak": match["time"],
+            "Šifra": match.get("internalId", "—"),
+            "Utakmica": match["match"],
+            "Takmičenje": match["league"],
+            "Interno": match.get("score") or "—",
+            "Poluvreme": match.get("ht") or "—",
+        }
         for source in sources:
             row[SOURCE_NAMES[source]] = reference_score(refs.get(source))
             row[SOURCE_NAMES[source] + " · poluvreme"] = reference_score(refs.get(source), True)
@@ -64,16 +77,34 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
 
 def preview_rows(result: dict) -> list[dict]:
     if result.get("format") == "native":
-        return [{"Šifra": m["internalId"], "Utakmica": m["match"], "Takmičenje": m["league"],
-                 "Dan i vreme": m["scheduleRaw"], "FT/HT": m.get("marketRaw") or "—",
-                 "Trenutni rezultat": m.get("numericScore") or "—", "Poluvreme": m.get("colonScore") or "—",
-                 "Minut gola (ne proverava se)": m.get("minuteRaw") or "—",
-                 "Period": m.get("phaseRaw") or "—"} for m in result.get("preview", [])]
-    return [{"Utakmica": m["match"], "Takmičenje": m["league"], "Početak": m["time"],
-             "Trenutni rezultat": m.get("score") or "—", "Poluvreme": m.get("ht") or "—"}
-            for m in result.get("rows", [])]
+        return [
+            {
+                "Šifra": m["internalId"],
+                "Utakmica": m["match"],
+                "Takmičenje": m["league"],
+                "Dan i vreme": m["scheduleRaw"],
+                "FT/HT": m.get("marketRaw") or "—",
+                "Trenutni rezultat": m.get("numericScore") or "—",
+                "Poluvreme": m.get("colonScore") or "—",
+                "Minut gola (ne proverava se)": m.get("minuteRaw") or "—",
+                "Period": m.get("phaseRaw") or "—",
+            }
+            for m in result.get("preview", [])
+        ]
+    return [
+        {
+            "Utakmica": m["match"],
+            "Takmičenje": m["league"],
+            "Početak": m["time"],
+            "Trenutni rezultat": m.get("score") or "—",
+            "Poluvreme": m.get("ht") or "—",
+        }
+        for m in result.get("rows", [])
+    ]
 
 
 def row_style(row):
-    color = {"Neslaganje": "#fff0ec", "Usaglašeno": "#eef7ed", "Nije provereno": "#fff9e9"}.get(row.get("Provera"), "")
+    color = {"Neslaganje": "#fff0ec", "Usaglašeno": "#eef7ed", "Nije provereno": "#fff9e9"}.get(
+        row.get("Provera"), ""
+    )
     return ["background-color: " + color if color else "" for _ in row]

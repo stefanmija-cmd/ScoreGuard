@@ -1,0 +1,316 @@
+{
+  "live": {
+    "datetime": "2026-11-12T16:23:00+00:00",
+    "start": "2026-11-11T23:00:00+00:00",
+    "end": "2026-11-13T05:00:00+00:00",
+    "meta": {
+      "name": "live",
+      "id": "za06n",
+      "live": true
+    },
+    "categories": {
+      "215": {
+        "name": "Suriname",
+        "name_short": "SUR",
+        "slug": "national/Suriname/Hoofdklasse/2026-2027"
+      },
+      "247": {
+        "name": "International",
+        "name_short": "INT",
+        "slug": "international/International/Friendly/2026"
+      },
+      "123": {
+        "name": "Turkmenistan",
+        "name_short": "TKM",
+        "slug": "national/Turkmenistan/Yokary-Liga/2026"
+      },
+      "36": {
+        "name": "UEFA",
+        "name_short": "UEFA",
+        "slug": "international/UEFA/Euro-Championship/2024"
+      }
+    },
+    "leagues": {
+      "590": {
+        "name": "Hoofdklasse",
+        "name_short": "D1",
+        "fg": "fff200",
+        "bg": "0c612a",
+        "slug": "national/Suriname/Hoofdklasse/2026-2027",
+        "type": 1,
+        "is_lower": true
+      },
+      "472": {
+        "name": "Club Friendly",
+        "name_short": "CF",
+        "fg": "fff",
+        "bg": "898fb0",
+        "slug": "international/International/Club-Friendly/2026",
+        "type": 2,
+        "is_lower": false
+      },
+      "471": {
+        "name": "Friendly",
+        "name_short": "FRL",
+        "fg": "fff",
+        "bg": "374f93",
+        "slug": "international/International/Friendly/2026",
+        "type": 2,
+        "is_lower": false
+      },
+      "861": {
+        "name": "Yokary Liga",
+        "name_short": "D1",
+        "fg": "fff",
+        "bg": "008000",
+        "slug": "national/Turkmenistan/Yokary-Liga/2026",
+        "type": 1,
+        "is_lower": true
+      },
+      "478": {
+        "name": "Friendly U17",
+        "name_short": "U17",
+        "fg": "fff",
+        "bg": "5f78c2",
+        "slug": "international/International/Friendly-U17/2026",
+        "type": 2,
+        "is_lower": true
+      },
+      "507": {
+        "name": "Euro U17 Qual.",
+        "name_short": "U17",
+        "fg": "fff",
+        "bg": "085998",
+        "slug": "international/UEFA/Euro-U17-Qual/2026-2027",
+        "type": 3,
+        "is_lower": true
+      },
+      "1067": {
+        "name": "Under 20 Elite League",
+        "name_short": "EL20",
+        "fg": "fff",
+        "bg": "5f78c2",
+        "slug": "international/International/Under-20-Elite-League/2026-2027",
+        "type": 1,
+        "is_lower": true
+      }
+    },
+    "subleagues": {
+      "88155": {
+        "name": "R1 Group 6",
+        "name_short": "U17Q",
+        "slug": "international/UEFA/Euro-U17-Qual/2026-2027/R1-Group-6",
+        "type": 1
+      }
+    },
+    "statuses": {
+      "5": {
+        "name": "FT",
+        "name_short": "FT",
+        "is_ended": true,
+        "in_play": false
+      },
+      "15": {
+        "name": "AP w/ET",
+        "name_short": "AP",
+        "is_ended": true,
+        "in_play": false
+      },
+      "1": {
+        "name": "---",
+        "name_short": "---",
+        "is_ended": false,
+        "in_play": false
+      },
+      "12": {
+        "name": "FT Only",
+        "name_short": "FTO",
+        "is_ended": false,
+        "in_play": true
+      },
+      "18": {
+        "name": "Cancelled",
+        "name_short": "CANC",
+        "is_ended": true,
+        "in_play": false
+      },
+      "4": {
+        "name": "46-90",
+        "name_short": "46-90",
+        "is_ended": false,
+        "in_play": true
+      },
+      "2": {
+        "name": "1-45",
+        "name_short": "1-45",
+        "is_ended": false,
+        "in_play": true
+      },
+      "3": {
+        "name": "HT",
+        "name_short": "HT",
+        "is_ended": false,
+        "in_play": true
+      }
+    },
+    "matches": {
+      "3437563": {
+        "category_id": 215,
+        "league_id": 590,
+        "status_id": 5,
+        "date": "2026-11-11T23:00:00+00:00",
+        "slug": "2026/11/11/national/Suriname/Hoofdklasse/2026-2027/Inter-Wanica/vs/Transvaal",
+        "score1": "0-1",
+        "score2": "0-0",
+        "team1": {
+          "name": "Inter Wanica",
+          "name_short": "Inter Wanica",
+          "slug": "Suriname/Inter-Wanica"
+        },
+        "team2": {
+          "name": "SV Transvaal",
+          "name_short": "Transvaal",
+          "slug": "Suriname/SV-Transvaal"
+        },
+        "details": true
+      },
+      "3446418": {
+        "category_id": 247,
+        "league_id": 472,
+        "status_id": 15,
+        "date": "2026-11-12T00:15:00+00:00",
+        "slug": "2026/11/12/international/International/Club-Friendly/2026/Atenas-ARG/vs/Estudiantes-RC",
+        "score1": "0-0",
+        "score2": "p.3-2",
+        "team1": {
+          "name": "CSyB Atenas",
+          "name_short": "Atenas (ARG)",
+          "slug": "Argentina/CSyB-Atenas"
+        },
+        "team2": {
+          "name": "Estudiantes Río Cuarto",
+          "name_short": "Estudiantes RC",
+          "slug": "Argentina/Estudiantes-Rio-Cuarto"
+        },
+        "details": false
+      },
+      "3396694": {
+        "category_id": 123,
+        "league_id": 861,
+        "status_id": 1,
+        "date": "2026-11-12T10:00:00+00:00",
+        "slug": "2026/11/12/national/Turkmenistan/Yokary-Liga/2026/Arkadag-FK/vs/Altyn-Asyr",
+        "team1": {
+          "name": "Arkadag FK",
+          "name_short": "Arkadag FK",
+          "slug": "Turkmenistan/Arkadag-FK"
+        },
+        "team2": {
+          "name": "Altyn Asyr FK",
+          "name_short": "Altyn Asyr",
+          "slug": "Turkmenistan/Altyn-Asyr-FK"
+        },
+        "details": false
+      },
+      "3445485": {
+        "category_id": 247,
+        "league_id": 478,
+        "status_id": 12,
+        "date": "2026-11-12T10:00:00+00:00",
+        "slug": "2026/11/12/international/International/Friendly-U17/2026/Uzbekistan-U17/vs/Ecuador-U17",
+        "score1": "",
+        "team1": {
+          "name": "Uzbekistan U17",
+          "name_short": "Uzbekistan U17",
+          "slug": "AFC/Uzbekistan-U17"
+        },
+        "team2": {
+          "name": "Ecuador U17",
+          "name_short": "Ecuador U17",
+          "slug": "CONMEBOL/Ecuador-U17"
+        },
+        "details": false
+      },
+      "3445525": {
+        "category_id": 247,
+        "league_id": 471,
+        "status_id": 18,
+        "date": "2026-11-12T11:59:00+00:00",
+        "slug": "2026/11/12/international/International/Friendly/2026/Myanmar/vs/Bhutan",
+        "team1": {
+          "name": "Myanmar",
+          "name_short": "Myanmar",
+          "slug": "AFC/Myanmar"
+        },
+        "team2": {
+          "name": "Bhutan",
+          "name_short": "Bhutan",
+          "slug": "AFC/Bhutan"
+        },
+        "details": false
+      },
+      "3408508": {
+        "category_id": 36,
+        "league_id": 507,
+        "league_sub_id": 88155,
+        "status_id": 4,
+        "date": "2026-11-12T15:00:00+00:00",
+        "minute": "65'",
+        "slug": "2026/11/12/international/UEFA/Euro-U17-Qual/2026-2027/R1-Group-6/Portugal-U17/vs/Andorra-U17",
+        "score1": "3-0",
+        "score2": "1-0",
+        "team1": {
+          "name": "Portugal U17",
+          "name_short": "Portugal U17",
+          "slug": "UEFA/Portugal-U17"
+        },
+        "team2": {
+          "name": "Andorra U17",
+          "name_short": "Andorra U17",
+          "slug": "UEFA/Andorra-U17"
+        },
+        "details": true
+      },
+      "3446218": {
+        "category_id": 247,
+        "league_id": 478,
+        "status_id": 3,
+        "date": "2026-11-12T15:30:00+00:00",
+        "slug": "2026/11/12/international/International/Friendly-U17/2026/Qatar-U17/vs/Honduras-U17",
+        "score1": "0-0",
+        "score2": "0-0",
+        "team1": {
+          "name": "Qatar U17",
+          "name_short": "Qatar U17",
+          "slug": "AFC/Qatar-U17"
+        },
+        "team2": {
+          "name": "Honduras U17",
+          "name_short": "Honduras U17",
+          "slug": "CONCACAF/Honduras-U17"
+        },
+        "details": false
+      },
+      "3428754": {
+        "category_id": 247,
+        "league_id": 1067,
+        "status_id": 2,
+        "date": "2026-11-12T16:00:00+00:00",
+        "minute": "21'",
+        "slug": "2026/11/12/international/International/Under-20-Elite-League/2026-2027/Italy-U20/vs/Portugal-U20",
+        "score1": "0-0",
+        "team1": {
+          "name": "Italy U20",
+          "name_short": "Italy U20",
+          "slug": "UEFA/Italy-U20"
+        },
+        "team2": {
+          "name": "Portugal U20",
+          "name_short": "Portugal U20",
+          "slug": "UEFA/Portugal-U20"
+        },
+        "details": false
+      }
+    }
+  }
+}

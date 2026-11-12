@@ -37,13 +37,13 @@ Skrivena fascikla `.streamlit` sadrži izgled aplikacije i primer podešavanja. 
 3. Kliknite `Create app`, pa `Yup, I have an app`.
 4. Popunite polja prema tabeli:
 
-| Polje | Vrednost |
-|---|---|
-| Repository | vaš GitHub nalog / scoreguard-cloud-test |
-| Branch | main, odnosno grana na kojoj ste sačuvali fajlove |
-| Main file path | streamlit_app.py |
-| App URL | slobodan naziv po želji |
-| Advanced settings → Python | 3.12 |
+| Polje                      | Vrednost                                          |
+| -------------------------- | ------------------------------------------------- |
+| Repository                 | vaš GitHub nalog / scoreguard-cloud-test          |
+| Branch                     | main, odnosno grana na kojoj ste sačuvali fajlove |
+| Main file path             | streamlit_app.py                                  |
+| App URL                    | slobodan naziv po želji                           |
+| Advanced settings → Python | 3.12                                              |
 
 **Main file path je `streamlit_app.py` na početnom nivou.** Taj fajl pokreće i servis. Ranija putanja `streamlit_panel/streamlit_app.py` pokretala je samo panel.
 
@@ -96,15 +96,15 @@ Ovo je verzija za trenutne testove. Za stalni operaterski rad i trajno čuvanje 
 
 ## 9. Najčešći problemi
 
-| Poruka ili simptom | Postupak |
-|---|---|
-| Nedostaju nalozi | U Settings → Secrets nalepite ceo zasebno dobijeni cloud-secrets.toml. |
-| Servis nije pokrenut | Proverite Secrets, da je ceo ZIP prenet, main file streamlit_app.py i Python 3.12; zatim Reboot app. |
-| Server za proveru nije dostupan | Sačekajte nekoliko sekundi da se servis ponovo pokrene. Ako se ponavlja, otvorite Manage app i proverite log. |
-| Pokušava vezu sa api:8080 | Izabran je stari ulazni fajl. Postavite root streamlit_app.py iz Cloud paketa. |
-| Pogrešno korisničko ime ili lozinka | Koristite Stefan ili Milos i ranije dodeljenu lozinku; proverite da ste preuzeli pravu konfiguraciju naloga. |
-| HTTP 403 kod izvora | Izvor je odbio zahtev; to nije greška prijave operatera. Proverite drugi izvor ili sačekajte predviđenu pauzu. |
-| Aplikacija spava | Otvorite je i kliknite dugme za buđenje. Potom proverite spisak i pokrenite ručnu proveru. |
+| Poruka ili simptom                  | Postupak                                                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Nedostaju nalozi                    | U Settings → Secrets nalepite ceo zasebno dobijeni cloud-secrets.toml.                                         |
+| Servis nije pokrenut                | Proverite Secrets, da je ceo ZIP prenet, main file streamlit_app.py i Python 3.12; zatim Reboot app.           |
+| Server za proveru nije dostupan     | Sačekajte nekoliko sekundi da se servis ponovo pokrene. Ako se ponavlja, otvorite Manage app i proverite log.  |
+| Pokušava vezu sa api:8080           | Izabran je stari ulazni fajl. Postavite root streamlit_app.py iz Cloud paketa.                                 |
+| Pogrešno korisničko ime ili lozinka | Koristite Stefan ili Milos i ranije dodeljenu lozinku; proverite da ste preuzeli pravu konfiguraciju naloga.   |
+| HTTP 403 kod izvora                 | Izvor je odbio zahtev; to nije greška prijave operatera. Proverite drugi izvor ili sačekajte predviđenu pauzu. |
+| Aplikacija spava                    | Otvorite je i kliknite dugme za buđenje. Potom proverite spisak i pokrenite ručnu proveru.                     |
 
 ## 10. Povezivanje različitih naziva klubova iz panela
 
@@ -198,3 +198,9 @@ Povezivanja sa `source: "sofa"` ostaju arhivirana i nisu aktivna za Futbol24. Po
 Za tekući i prethodni dan koriste se javni dnevni prikazi, a za druge datume prikaz za izabrani datum. Kalendarski dan se računa u Europe/Belgrade, uz promenu letnjeg i zimskog vremena i filtriranje stvarnog vremena početka. Odgovor za pogrešan datum se ne prihvata. Dodatni datirani zahtev dozvoljen je samo ako uspešan dnevni odgovor zahvati susedni dan; blokada, HTTP 403/429, CAPTCHA i zastarelost ne pokreću pokušaje preko alternativnih domaćina.
 
 Običan FT rezultat i poluvreme čitaju se odvojeno. Futbol24 AET zapis sa dva para u dodatnom rezultatu izdvaja poluvreme i regularnih 90 minuta. Zapis `p.x-y` predstavlja penale i ne koristi se kao poluvreme ili pretpostavljeni rezultat za 90 minuta. Nedostajući regularni rezultat, „FT Only“, nepoznati statusi i službeni ishodi ne potvrđuju rezultat. Sama dostupnost sajta nije potvrda svakog pojedinačnog meča.
+
+## Razvojne provere
+
+Cloud paket sada uključuje razvojne formatere i testove. Uputstvo i komande su u [DEVELOPMENT.md](DEVELOPMENT.md). Operaterima nije potrebna instalacija tih alata niti promena naloga.
+
+Obaveštenje o Cloud režimu ima veći razmak ispod Streamlit zaglavlja i na mobilnom prikazu. Potvrđene veze naziva imaju prednost nad heuristikom selekcije; oznaka F u nazivu kluba ne određuje pol. Zahtevi panela i servisni requestTimeout podešeni su na 90 sekundi, uz isti petominutni raspored.
