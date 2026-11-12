@@ -3,7 +3,10 @@ export const INTERVAL_MS = 5 * 60 * 1000;
 export const MAX_MATCHES = 1000;
 export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 export const FRESH_MS = INTERVAL_MS + 30 * 1000;
-export const SOURCE_NAMES = {flash: 'Flashscore', sofa: 'Sofascore', api: 'API-Football'};
+export const SOURCE_NAMES = {flash: 'Flashscore', f24: 'Futbol24', api: 'API-Football'};
+export const LEGACY_SOURCE_NAMES = {sofa:'Sofascore (arhiva)'};
+export function normalizeSourceId(source){return source==='sofa'?'f24':source;}
+export function sourceLabel(source){return SOURCE_NAMES[source]||LEGACY_SOURCE_NAMES[source]||source;}
 export const LIVE_PHASES = new Set(['first_half', 'half_time', 'second_half', 'extra_time', 'penalties']);
 export const PHASE_LABELS = {first_half:'Prvo poluvreme',half_time:'Poluvreme',second_half:'Drugo poluvreme',extra_time:'Produžeci',penalties:'Penali',finished:'Završeno',finished_extra_time:'Završeno posle produžetaka',finished_penalties:'Završeno posle penala',scheduled:'Nije počelo',postponed:'Odloženo',cancelled:'Otkazano',interrupted:'Prekinuto',awarded:'Službeni rezultat',unknown:'Nepoznat status'};
 export function normalizeName(value) { return String(value ?? '').replace(/đ/g, 'dj').replace(/Đ/g, 'Dj').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''); }
@@ -40,7 +43,8 @@ export function parseInput(text, idFactory=()=>globalThis.crypto.randomUUID()) {
  return {rows,errors};
 }
 export function validateWatch(body) {
- if (!body || !validDate(body.date) || !Array.isArray(body.sources) || !body.sources.length || body.sources.length>3 || new Set(body.sources).size!==body.sources.length || body.sources.some(s=>!Object.hasOwn(SOURCE_NAMES,s))) throw new Error('Proverite datum i izbor izvora.');
+ const sources=Array.isArray(body?.sources)?body.sources.map(normalizeSourceId):[];
+ if (!body || !validDate(body.date) || !sources.length || sources.length>3 || new Set(sources).size!==sources.length || sources.some(s=>!Object.hasOwn(SOURCE_NAMES,s))) throw new Error('Proverite datum i izbor izvora.');
  if (!Array.isArray(body.matches) || !body.matches.length || body.matches.length>MAX_MATCHES) throw new Error('Dozvoljeno je od 1 do '+MAX_MATCHES+' mečeva.');
  const ids=new Set(),dates=new Set();
  const matches=body.matches.map(m=>{
@@ -58,7 +62,7 @@ export function validateWatch(body) {
   return {id:m.id,sport:m.sport,time:m.time,league:m.league,match:m.match,ht:m.ht||null,score:m.score,expectedStatus:m.expectedStatus||null,scoreBasis:'regular',...(m.date?{date}:{}),...(m.internalId?{internalId:m.internalId}:{}),...(native?{inputFormat:'native',native}:{})};
  });
  if(dates.size>3)throw new Error('Jedan spisak podržava najviše tri kalendarska dana.');
- return {date:body.date,sources:[...body.sources],matches};
+ return {date:body.date,sources,matches};
 }
 export function canonicalClubKey(name,aliases={}) {const key=normalizeName(name);return teamIdentityKey(Object.hasOwn(aliases.teams||{},key)?aliases.teams[key]:name);}
 export function matchEvent(internal,events,date,aliases={},preFiltered=false) {
@@ -96,7 +100,7 @@ function comparisonPhaseLabel(ref) {
 }
 export function compareResult(m,sources,now=Date.now(),demo=false) {
  if(!m.score)return {status:'unverified',reason:'Nedostaje interni rezultat.'};
- const selected=sources.map(source=>({source,ref:m.refs?.[source],name:SOURCE_NAMES[source]||source}));
+ const selected=sources.map(source=>({source,ref:m.refs?.[source],name:sourceLabel(source)}));
  if(!selected.length)return {status:'unverified',reason:'Nije izabran izvor za proveru.'};
  const fresh=selected.filter(({ref})=>ref?.state==='verified'&&referenceFresh(ref,now,demo));
  const differences=[];

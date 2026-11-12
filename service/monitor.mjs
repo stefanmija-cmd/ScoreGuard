@@ -30,7 +30,14 @@ export class Monitor {
  constructor({collector,store,teamAliases=null,operations=null,clock=()=>Date.now(),intervalMs=INTERVAL_MS,maxOperators=100}) { this.collector=collector;this.store=store;this.teamAliases=teamAliases;this.operations=operations;this.clock=clock;this.intervalMs=intervalMs;this.maxOperators=maxOperators;this.watches={};this.inflight=new Map();this.inflightGenerations=new Map();this.generation=0;this.timer=null;this.ticking=false; }
  async init() {
   this.watches=await this.store.load();
-  for(const [operator,record] of Object.entries(this.watches)) { validateWatch(record.watch);record.running=false;record.generation=++this.generation;if(this.teamAliases&&record.aliasRevision!==this.teamAliases.revision(operator)){record.lastResult=null;record.aliasRevision=this.teamAliases.revision(operator);record.nextCheckAt=record.enabled?this.clock():null;} }
+  let migrated=false;
+  for(const [operator,record] of Object.entries(this.watches)) {
+   const validated=validateWatch(record.watch),legacy=record.watch.sources.includes('sofa');
+   if(legacy){record.watch=validated;record.revision=watchRevision(validated);record.lastResult=null;record.nextCheckAt=record.enabled?this.clock():null;record.sourceMigration='sofa-to-f24';migrated=true;}
+   record.running=false;record.generation=++this.generation;
+   if(this.teamAliases&&record.aliasRevision!==this.teamAliases.revision(operator)){record.lastResult=null;record.aliasRevision=this.teamAliases.revision(operator);record.nextCheckAt=record.enabled?this.clock():null;}
+  }
+  if(migrated)await this.store.save(this.watches);
  }
  async configure(operator,config,{enabled=true,imported=false}={}) {
   const watch=validateWatch(config),revision=watchRevision(watch),old=this.watches[operator];

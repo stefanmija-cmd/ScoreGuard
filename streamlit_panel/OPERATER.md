@@ -1,6 +1,6 @@
 ## Čemu služi aplikacija
 
-ScoreGuard upoređuje rezultate iz tvog kopiranog internog spiska sa izabranim izvorima: Flashscore, Sofascore i API-Football ako je podešen. Prati fudbalske utakmice koje su u toku i završene utakmice. Neslaganje je signal da operater treba da proveri meč.
+ScoreGuard upoređuje rezultate iz tvog kopiranog internog spiska sa izabranim izvorima: Flashscore, Futbol24 i API-Football ako je podešen. Prati fudbalske utakmice koje su u toku i završene utakmice. Neslaganje je signal da operater treba da proveri meč.
 
 Svaki operater ima svoj aktivni spisak. Provere i napomene beleže se pod nalogom prijavljenog operatera.
 
@@ -57,7 +57,7 @@ U **Detaljima meča i obradi neslaganja** vidiš razlog oznake: razliku u rezult
 1. U **Pregledu mečeva** izaberi filter **Neslaganja**. Meč možeš pronaći i pretragom kluba, takmičenja ili interne šifre.
 2. Otvori **Detalji meča i obrada neslaganja**, izaberi utakmicu i pročitaj razlog oznake.
 3. Uporedi interni rezultat, poluvreme i period sa podacima svakog izabranog izvora. Proveri i vreme preuzimanja.
-4. Preko **Otvori Flashscore** ili **Otvori Sofascore** pogledaj meč na samom sajtu. Proveri i najnovije stanje u internom programu.
+4. Preko **Otvori Flashscore** ili **Otvori Futbol24** pogledaj meč na samom sajtu. Proveri i najnovije stanje u internom programu.
 5. U **Napomena operatera** upiši šta si proverio i klikni **Sačuvaj obradu**.
 6. Kada dobiješ novu internu vrednost, ponovo uvezi spisak i pokreni proveru.
 
@@ -108,3 +108,11 @@ U **Podešavanjima** izaberi **Pripremi rezervnu kopiju**, pa **Preuzmi rezervnu
 Kroz **Vrati rezervnu kopiju** izaberi prethodno preuzeti fajl i potvrdi zamenu svog spiska. Posle vraćanja automatika je pauzirana, a prethodni rezultati izvora nisu potvrđeni. Klikni **Proveri sada**, pa po potrebi uključi automatiku. Vraćena istorija ima posebnu oznaku.
 
 Ako u Podešavanjima piše da podaci ostaju lokalni, čuvaj rezervne kopije: testna instanca može izgubiti podatke. Ako je administrator povezao spoljnu bazu, aplikacija prikazuje taj status. Uspavljivanje Streamlita u oba slučaja zaustavlja provere dok se aplikacija ponovo ne pokrene.
+
+## 12. Futbol24 kao drugi izvor
+
+U izvorima možeš izabrati **Flashscore**, **Futbol24** ili oba. Futbol24 ne zahteva poseban API ključ. Interval od pet minuta i dugme **Proveri sada** ostaju isti.
+
+Pri prelasku sa prethodnog izvora sačuvani izbor se menja na Futbol24, a prethodna potvrda rezultata se poništava. Pokreni novu proveru. Ranije Sofascore povezivanje naziva nije potvrda naziva na Futbol24: potraži predlog u detaljima ili dodaj povezivanje za Futbol24. Opšta povezivanja za sve izvore nastavljaju da važe. Stara istorija zadržava oznaku izvora iz kog je zaista nastala.
+
+Za običan završen meč porede se rezultat i poluvreme. Za produžetke poredi se izdvojeni rezultat za 90 minuta samo kada je jasno dostupan. Penali se ne dodaju rezultatu. Ako izvor daje samo rezultat penala ili nepoznat period, podatak ostaje neproveren i razlog je u detaljima.

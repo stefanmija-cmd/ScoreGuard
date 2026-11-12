@@ -10,6 +10,7 @@ export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGu
  function sameOrigin(req){const expected=publicOrigin||(auth.secure?'https://':'http://')+req.headers.host;return req.headers.origin===expected;}
  async function readBody(req,max=MAX_INPUT_BYTES){let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>max)throw Error('Zahtev je prevelik.');chunks.push(chunk)}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
  async function aliasesChanged(shared,operator){if(shared){for(const id of Object.keys(monitor.watches))await monitor.matchingChanged(id);}else await monitor.matchingChanged(operator);}
+ const activeLinks=operator=>teamAliases.list(operator).filter(link=>link.source!=='sofa');
  return async function handle(req,res,url){
   if(url.pathname==='/healthz'||url.pathname.startsWith('/v1/'))return false;
   const session=await auth.fromCookie(req.headers.cookie),user=session?.user;
@@ -30,21 +31,21 @@ export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGu
    try{
     if(url.pathname==='/api/team-aliases'||url.pathname==='/api/team-aliases/import'){
      if(!teamAliases){json(res,503,{error:'Povezivanje klubova nije dostupno. Ažurirajte servis.'});return true;}
-     if(req.method==='GET'&&url.pathname==='/api/team-aliases'){json(res,200,{aliases:teamAliases.list(user.id),sharedAliases:teamAliases.list('@shared'),canManageShared:user.role==='admin',events:teamAliases.history(user.id),limit:teamAliases.limit,configuredCount:monitor.collector.configuredTeamAliasCount||0});return true;}
+     if(req.method==='GET'&&url.pathname==='/api/team-aliases'){json(res,200,{aliases:activeLinks(user.id),sharedAliases:activeLinks('@shared'),legacyAliasCount:[...teamAliases.list(user.id),...teamAliases.list('@shared')].filter(link=>link.source==='sofa').length,canManageShared:user.role==='admin',events:teamAliases.history(user.id).filter(event=>event.source!=='sofa'),limit:teamAliases.limit,configuredCount:monitor.collector.configuredTeamAliasCount||0});return true;}
      if(req.method==='POST'){
       const body=await readBody(req,url.pathname.endsWith('/import')?MAX_INPUT_BYTES:4096);let result;const shared=body.scope==='shared';
       if(shared&&user.role!=='admin'){json(res,403,{error:'Zajednička povezivanja uređuje administrator.'});return true;}
       const target=shared?'@shared':user.id;
-      if(url.pathname.endsWith('/import')){if(body.version!==1||!Array.isArray(body.aliases))throw Error('Datoteka mora biti prethodno izvezena lista povezivanja.');result=await teamAliases.addMany(target,body.aliases.map(link=>({...link,confirmed:body.confirmed===true})),user.name,user.id);}
+      if(url.pathname.endsWith('/import')){if(body.version!==1||!Array.isArray(body.aliases))throw Error('Datoteka mora biti prethodno izvezena lista povezivanja.');result=await teamAliases.addMany(target,body.aliases.map(link=>({...link,confirmed:body.confirmed===true})),user.name,user.id,{allowLegacy:true});}
       else result=await teamAliases.add(target,body,user.name,user.id);
       if(result.changed)await aliasesChanged(shared,user.id);
-      json(res,200,{...result,aliases:teamAliases.list(user.id)});return true;
+      json(res,200,{...result,aliases:activeLinks(user.id)});return true;
      }
      if(req.method==='DELETE'&&url.pathname==='/api/team-aliases'){const body=await readBody(req,4096),shared=body.scope==='shared';if(shared&&user.role!=='admin'){json(res,403,{error:'Zajednička povezivanja uređuje administrator.'});return true;}const result=await teamAliases.remove(shared?'@shared':user.id,body.id,user.name,user.id);await aliasesChanged(shared,user.id);json(res,200,{...result,aliases:teamAliases.list(user.id)});return true;}
      json(res,405,{error:'Nedozvoljen metod.'});return true;
     }
     if(url.pathname==='/api/auth/logout'&&req.method==='POST'){json(res,200,{ok:true},{'Set-Cookie':await auth.logout(req.headers.cookie)});return true;}
-    if(url.pathname==='/api/monitor'&&req.method==='GET'){const snapshot=monitor.snapshot(user.id),storage=monitor.store.status||{mode:'local',durable:false,state:'ready'},states=[storage,monitor.operations?.status,teamAliases?.document.status].filter(Boolean);json(res,200,{monitor:snapshot,view:monitorPresentation(snapshot),background:true,operations:!!monitor.operations,storage:{...storage,state:states.find(s=>s.state!=='ready')?.state||'ready'},sourceConfiguration:monitor.collector.configuredSources||{flash:true,sofa:true},limits:{matches:1000},feedStats:monitor.collector.stats||{}});return true;}
+    if(url.pathname==='/api/monitor'&&req.method==='GET'){const snapshot=monitor.snapshot(user.id),storage=monitor.store.status||{mode:'local',durable:false,state:'ready'},states=[storage,monitor.operations?.status,teamAliases?.document.status].filter(Boolean);json(res,200,{monitor:snapshot,view:monitorPresentation(snapshot),background:true,operations:!!monitor.operations,storage:{...storage,state:states.find(s=>s.state!=='ready')?.state||'ready'},sourceConfiguration:monitor.collector.configuredSources||{flash:true,f24:true},limits:{matches:1000},feedStats:monitor.collector.stats||{}});return true;}
     if(url.pathname==='/api/history'&&req.method==='GET'){json(res,200,{events:monitor.history(user.id,url.searchParams.get('matchId'))});return true;}
     if(url.pathname==='/api/cases'&&req.method==='GET'){if(!monitor.operations)throw Error('Evidencija slučajeva nije dostupna.');const offset=Math.max(0,Number.parseInt(url.searchParams.get('offset')||'0',10)||0),owner=url.searchParams.get('owner')==='me'?user.id:url.searchParams.get('owner')==='unassigned'?'unassigned':'';json(res,200,monitor.operations.board({offset,limit:100,includeResolved:url.searchParams.get('resolved')==='1',owner,query:(url.searchParams.get('q')||'').slice(0,150)}));return true;}
     if(url.pathname==='/api/cases/action'&&req.method==='POST'){const body=await readBody(req,8000);if(!monitor.operations)throw Error('Evidencija slučajeva nije dostupna.');json(res,200,{case:await monitor.operations.action(body.id,body.action,user,{version:body.version,note:body.note})});return true;}
@@ -65,9 +66,9 @@ export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGu
      const raw=await readBody(req,12*1024*1024),body=raw.backup;
      if(raw.confirmed!==true||!body||body.app!=='ScoreGuard'||body.version!==2||!Array.isArray(body.aliases)||body.aliases.length>(teamAliases?.limit||0))throw Error('Izaberite važeću rezervnu kopiju i potvrdite vraćanje.');
      const watch=body.watch?validateWatch(body.watch):null;
-     const aliases=body.aliases.map(link=>normalizeTeamLink({...link,confirmed:true}));
+     const aliases=body.aliases.map(link=>({...normalizeTeamLink({...link,confirmed:true},{allowLegacy:true}),confirmed:true}));
      if(body.sharedAliases!==undefined&&!Array.isArray(body.sharedAliases))throw Error('Neispravna zajednička povezivanja u kopiji.');
-     const shared=(body.sharedAliases||[]).map(link=>normalizeTeamLink({...link,confirmed:true}));
+     const shared=(body.sharedAliases||[]).map(link=>({...normalizeTeamLink({...link,confirmed:true},{allowLegacy:true}),confirmed:true}));
      if(shared.length&&user.role!=='admin'){json(res,403,{error:'Zajednička povezivanja može vratiti administrator.'});return true;}
      if(shared.length>(teamAliases?.limit||0))throw Error('Previše zajedničkih povezivanja.');
      monitor.operations?.validateHistory(body.history||[]);
@@ -78,8 +79,8 @@ export function createWebApp({monitor,auth,html,loginHtml,sourceZip,productionGu
      if(body.reviewEvents!==undefined&&(!Array.isArray(body.reviewEvents)||body.reviewEvents.length>500))throw Error('Neispravna evidencija napomena u kopiji.');
      const reviewEvents=(body.reviewEvents||[]).map(review=>({...restoreReview(review),matchId:typeof review.matchId==='string'?review.matchId.slice(0,100):'',match:typeof review.match==='string'?review.match.slice(0,200):''}));
      if(body.importedAt!==null&&(!Number.isFinite(Date.parse(body.importedAt))||Date.parse(body.importedAt)>Date.now()+30000))throw Error('Neispravno vreme internog unosa u kopiji.');
-     if(aliases.length)await teamAliases.addMany(user.id,aliases,user.name);
-     if(shared.length)await teamAliases.addMany('@shared',shared,user.name,user.id);
+     if(aliases.length)await teamAliases.addMany(user.id,aliases,user.name,user.id,{allowLegacy:true});
+     if(shared.length)await teamAliases.addMany('@shared',shared,user.name,user.id,{allowLegacy:true});
      if(body.history?.length)await monitor.operations?.restoreHistory(user.id,body.history);
      if(watch){await monitor.configure(user.id,watch,{enabled:false,imported:true});monitor.watches[user.id].importedAt=body.importedAt;monitor.watches[user.id].lastResult=null;monitor.watches[user.id].reviews=reviews;monitor.watches[user.id].reviewEvents=reviewEvents;await monitor.store.save(monitor.watches);}
      await aliasesChanged(shared.length>0,user.id);

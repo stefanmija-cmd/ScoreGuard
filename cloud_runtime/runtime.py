@@ -50,8 +50,8 @@ class CloudRuntime:
             if not isinstance(aliases, dict):
                 raise ValueError
             if "teams" in aliases:
-                aliases = {source: {"teams": aliases["teams"]} for source in ("flash", "sofa", "api")}
-            for source in ("flash", "sofa", "api"):
+                aliases = {source: {"teams": aliases["teams"]} for source in ("flash", "f24", "api")}
+            for source in ("flash", "f24", "api", "sofa"):
                 teams = aliases.get(source, {}).get("teams", {})
                 if not isinstance(teams, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in teams.items()):
                     raise ValueError

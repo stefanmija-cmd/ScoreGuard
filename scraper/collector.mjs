@@ -1,11 +1,11 @@
 import {SOURCE_NAMES,matchEvent,eventReference,validateWatch,dateKey,timeKey,INTERVAL_MS,FRESH_MS,canonicalClubKey} from './model.mjs';
 import {scrapeFlashscore} from './providers/flashscore.mjs';
-import {scrapeSofascore} from './providers/sofascore.mjs';
+import {scrapeFutbol24} from './providers/futbol24.mjs';
 import {compileTeamAliases} from './team-aliases.mjs';
 import {candidateMatches} from './team-matching.mjs';
 import {createApiFootballProvider} from './providers/api-football.mjs';
 export function createCollector({fetcher=globalThis.fetch,clock=()=>Date.now(),providers={},aliases={},cacheMs=INTERVAL_MS,manualMinIntervalMs=15000,apiFootball={}}={}) {
- const implementations={flash:scrapeFlashscore,sofa:scrapeSofascore,api:createApiFootballProvider({...apiFootball,clock}),...providers},cooldowns=new Map(),cache=new Map(),inflight=new Map();
+ const implementations={flash:scrapeFlashscore,f24:scrapeFutbol24,api:createApiFootballProvider({...apiFootball,clock}),...providers},cooldowns=new Map(),cache=new Map(),inflight=new Map();
  const stats={requests:0,cacheHits:0,joinedRequests:0};
  async function feed(source,date,trigger){
   const key=source+':'+date,entry=cache.get(key),age=entry?clock()-entry.fetchedAt:Infinity;
@@ -63,5 +63,5 @@ export function createCollector({fetcher=globalThis.fetch,clock=()=>Date.now(),p
   });
   return {results,health,startedAt,checkedAt,intervalSeconds:300};
  }
- return {collect,cooldowns,stats,configuredSources:{flash:true,sofa:true,api:!!apiFootball.key||!!providers.api},configuredTeamAliasCount:Object.values(aliases).reduce((count,source)=>count+Object.keys(source?.teams||{}).length,0)};
+ return {collect,cooldowns,stats,configuredSources:{flash:true,f24:true,api:!!apiFootball.key||!!providers.api},configuredTeamAliasCount:Object.entries(aliases).filter(([source])=>source!=='sofa').reduce((count,[,source])=>count+Object.keys(source?.teams||{}).length,0)};
 }

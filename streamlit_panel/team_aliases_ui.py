@@ -6,7 +6,7 @@ import pandas as pd
 from streamlit_panel.api_client import ApiError
 from streamlit_panel.presentation import local_time
 
-ALIAS_SOURCE_NAMES = {"flash": "Flashscore", "sofa": "Sofascore", "api": "API-Football", "all": "Svi izvori"}
+ALIAS_SOURCE_NAMES = {"flash": "Flashscore", "f24": "Futbol24", "api": "API-Football", "all": "Svi izvori"}
 
 
 def render_team_aliases(api, snapshot, cloud_mode, handle_error):
@@ -21,6 +21,8 @@ def render_team_aliases(api, snapshot, cloud_mode, handle_error):
         st.success(st.session_state.pop("alias_notice"))
     if data.get("configuredCount"):
         st.caption("Aktivna su i ranije podešena povezivanja klubova. Uklanjanje veze sa ovog spiska ne uklanja ta ranija pravila.")
+    if data.get("legacyAliasCount"):
+        st.info("Ranija Sofascore povezivanja su sačuvana u arhivi. Za Futbol24 potvrdi njegove nazive klubova; stara povezivanja se ne koriste automatski za novi izvor.")
     if st.session_state.pop("alias_reset_form", False):
         st.session_state["alias_confirmed"] = False
         st.session_state["alias_source_name"] = ""

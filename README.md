@@ -2,7 +2,7 @@
 
 Ova verzija pokreće Streamlit panel, scraper, naloge i raspored u istoj Streamlit Community Cloud instanci. Ne traži Docker, VPS, domen, BACKEND_URL ni PUBLIC_ORIGIN.
 
-Pravila poređenja: fudbal, live i završeni mečevi, trenutni rezultat i poluvreme. Izvori su Flashscore, Sofascore i opcioni API-Football. Povezivanje koristi klubove, datum i vreme; preveden naziv takmičenja ne blokira povezivanje. Minuti golova ne porede se. Interni program se koristi isključivo ručnim kopiranjem spiska.
+Pravila poređenja: fudbal, live i završeni mečevi, trenutni rezultat i poluvreme. Izvori su Flashscore, Futbol24 i opcioni API-Football. Povezivanje koristi klubove, datum i vreme; preveden naziv takmičenja ne blokira povezivanje. Minuti golova ne porede se. Interni program se koristi isključivo ručnim kopiranjem spiska.
 
 ## 1. Pripremite dva odvojena fajla
 
@@ -68,7 +68,7 @@ Ako ste aplikaciju već objavili, otvorite `Manage app` → `Settings` → `Secr
 4. Prijavite se kao Stefan ili Milos postojećom lozinkom. Velika i mala slova korisničkog imena nisu bitna.
 5. Otvorite `Uvoz mečeva`, izaberite datum prvog dana spiska i nalepite kopiju iz internog programa.
 6. Kliknite `Pregledaj unos` i proverite interne šifre, domaćina/gosta, tekući rezultat i poluvreme.
-7. Za početni test izaberite Flashscore i uključite automatsku proveru. Sofascore može ostati nedostupan zbog HTTP 403. API-Football zahteva zaseban ključ i plan koji pokriva izabrane datume.
+7. Izaberite Flashscore, Futbol24 ili oba izvora i uključite automatsku proveru. API-Football ostaje dodatna opcija koja zahteva zaseban ključ i odgovarajući plan.
 8. Kliknite `Uvezi mečeve`, zatim otvorite `Pregled mečeva` i kliknite `Proveri sada`.
 
 Mečevi svakog operatera, napomene i istorija odvojeni su prema prijavljenom nalogu. Samo osvežavanje stranice može tražiti novu prijavu; ono samo po sebi ne briše spisak.
@@ -90,7 +90,7 @@ Streamlit Community Cloud prema svojoj dokumentaciji uspavljuje aplikacije posle
 
 Podaci su u lokalnom prostoru Cloud instance. Ponovno kreiranje, nova instalacija ili premeštanje instance može obrisati spiskove, istoriju, napomene i sesije. Nalozi se ponovo učitavaju iz Secrets. Važnu istoriju tokom testa preuzmite kao CSV iz panela. Običan restart internog servisa pokušava da sačuva lokalne podatke dok isti prostor postoji.
 
-Sofascore je u razvojnom okruženju vraćao HTTP 403. Uspešan pristup sa vašeg Streamlit Cloud servera mora se proveriti. Aplikacija ne zaobilazi zaštitu i ne potvrđuje rezultate iz blokiranog izvora.
+Futbol24 je provereno dostupan iz razvojnog okruženja za live i završene mečeve. Dostupnost sa vaše Streamlit instance prikazuje sama aplikacija. Ako izvor odbije pristup, vrati zastarele podatke ili ne pruži neophodan rezultat, podatak ostaje neproveren.
 
 Ovo je verzija za trenutne testove. Za stalni operaterski rad i trajno čuvanje podataka koristite zasebni produkcioni servis.
 
@@ -166,9 +166,9 @@ SCOREGUARD_STORAGE_NAMESPACE = "scoreguard-test"
 
 Baza čuva spiskove, provere, napomene, povezivanja, zajedničke slučajeve i istoriju. Nalozi i pristupni ključevi ostaju u Secrets, a korisnici se nakon nove instance ponovo prijavljuju. Uspavljivanje Streamlita i dalje prekida provere. Podržan je jedan aktivni servis po ovom prostoru baze; kontrola revizija odbija upis druge nezavisne instance. Za dva odvojena testa koristite različite namespace vrednosti. Isključivanje baze vraća rad na lokalno skladište, pa prethodno izvezite podatke koje želite da zadržite.
 
-## 15. Opcioni API-Football umesto nedostupnog Sofascore-a
+## 15. Opcioni API-Football kao dodatni izvor
 
-Priključak koristi dokumentovani API dobavljača: https://www.api-football.com/documentation-v3 . Nije zaobilaženje zaštite Sofascore-a i ne menja izabrani izvor bez vašeg izbora.
+Priključak koristi dokumentovani API dobavljača: https://www.api-football.com/documentation-v3 . To je zaseban opcioni izvor i ne menja izabrani izvor bez vašeg izbora.
 
 Pre aktiviranja proverite plan, sezone i pokrivenost vaših takmičenja, uključujući poluvreme i live podatke. Dobavljač za besplatni plan u 2026. navodi sezone 2022–2024; takav plan nije rešenje za današnje utakmice: https://www.api-football.com/news/post/how-to-get-all-data-from-a-league-with-api-football . Besplatnih 100 zahteva dnevno takođe nije dovoljno za proveru tokom celog dana na pet minuta: samo jedan datum traži 288 zahteva dnevno, a više datuma povećava broj. Izvori i ograničenja: https://www.api-football.com/pricing . Cene i uslove proverite na sajtu pre pretplate.
 
@@ -181,4 +181,16 @@ APIFOOTBALL_DAILY_LIMIT = 90
 
 Limit od 90 je namerno oprezan za kratke probe. Povećajte ga samo prema svom planu; ne pretpostavlja se da imate plaćenu pretplatu. Ključ se šalje samo u serverskom zaglavlju na `v3.football.api-sports.io`. RapidAPI ključ koristi drugi režim i nije podržan ovim priključkom. Posle ponovnog pokretanja izaberite **API-Football** u aplikaciji i pokrenite proveru. Bez ključa izvor ostaje jasno neproveren. Uspešan pristup stvarnom API-Football nalogu nije potvrđen u ovoj isporuci, jer ključ nije dostavljen.
 
-Druga opcija za kasniju procenu je Sportmonks sa probnim periodom i pokrivenošću prema paketu: https://www.sportmonks.com/football-api/plans-pricing/ . Njegov priključak nije uključen u ovu verziju. Za sada test funkcionalnosti nastavlja se sa Flashscore-om i ručnim internim unosom.
+Osnovni test sada koristi Flashscore i Futbol24, uz ručni interni unos. Za njih nije potreban API-Football ključ.
+
+## 16. Zamena Sofascore-a izvorom Futbol24
+
+Aktivni izvori su sada Flashscore (`flash`), Futbol24 (`f24`) i opcioni API-Football (`api`). Futbol24 koristi javne odgovore koje učitava njegov sajt; ovo nije zvanično ugovoreni API dobavljača. Poseban ključ za njega nije potreban. U razvojnoj proveri 12. novembra 2026. potvrđeni su live i završeni mečevi, rezultati poluvremena i oba ranija U19 primera: Austria – Belarus 0:1 (0:0) i France – Norway 6:0 (3:0). Izvor: https://www.futbol24.com/ . Dostupnost iz same korisničke Streamlit instance još treba proveriti.
+
+Posle ažuriranja GitHub koda kliknite **Manage app → Reboot app**, pa **Proveri sada**. Ranije sačuvan izbor Sofascore-a automatski postaje Futbol24. Stari rezultati i njihove potvrde se ne prenose na novi izvor. Spiskovi, vreme internog unosa, napomene i zaduženja ostaju sačuvani u okviru postojećeg skladišta. Ovo ne menja ograničenje privremenih lokalnih podataka na Community Cloudu.
+
+Povezivanja sa `source: "sofa"` ostaju arhivirana i nisu aktivna za Futbol24. Potvrdite njegova imena klubova kroz predloge ili stranicu povezivanja. Povezivanja za sve izvore ostaju aktivna. Isto važi za ručno podešenu mapu `TEAM_ALIASES_JSON`: stari odeljak `sofa` se ne koristi kao Futbol24 mapa; njegov odeljak je `f24`. Nije potrebno menjati konfiguraciju naloga. Stare rezervne kopije mogu se vratiti: izbor izvora se prilagođava, stari podaci ne potvrđuju novi izvor, a istorija ostaje označena kao arhiva.
+
+Za tekući i prethodni dan koriste se javni dnevni prikazi, a za druge datume prikaz za izabrani datum. Kalendarski dan se računa u Europe/Belgrade, uz promenu letnjeg i zimskog vremena i filtriranje stvarnog vremena početka. Odgovor za pogrešan datum se ne prihvata. Dodatni datirani zahtev dozvoljen je samo ako uspešan dnevni odgovor zahvati susedni dan; blokada, HTTP 403/429, CAPTCHA i zastarelost ne pokreću pokušaje preko alternativnih domaćina.
+
+Običan FT rezultat i poluvreme čitaju se odvojeno. Futbol24 AET zapis sa dva para u dodatnom rezultatu izdvaja poluvreme i regularnih 90 minuta. Zapis `p.x-y` predstavlja penale i ne koristi se kao poluvreme ili pretpostavljeni rezultat za 90 minuta. Nedostajući regularni rezultat, „FT Only“, nepoznati statusi i službeni ishodi ne potvrđuju rezultat. Sama dostupnost sajta nije potvrda svakog pojedinačnog meča.

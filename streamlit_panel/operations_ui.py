@@ -8,7 +8,7 @@ from functools import lru_cache
 import pandas as pd
 import streamlit as st
 from streamlit_panel.api_client import ApiError
-from streamlit_panel.presentation import SOURCE_NAMES, STATUS_NAMES, WORK_NAMES, input_age, local_time
+from streamlit_panel.presentation import SOURCE_NAMES, LEGACY_SOURCE_NAMES, STATUS_NAMES, WORK_NAMES, input_age, local_time
 
 
 def detect_alerts(matches, previous):
@@ -113,8 +113,9 @@ def render_timeline(api, match_id, handle_error):
         row = {"Vreme": local_time(event.get("at"), True), "Interno": event.get("internal", {}).get("score") or "—",
                "Interno · poluvreme": event.get("internal", {}).get("ht") or "—", "Provera": STATUS_NAMES.get(event.get("comparisonStatus"), "Nije provereno")}
         for source, ref in event.get("refs", {}).items():
-            row[SOURCE_NAMES.get(source, source)] = ref.get("score") or "—"
-            row[SOURCE_NAMES.get(source, source) + " · poluvreme"] = ref.get("ht") or "—"
+            label = SOURCE_NAMES.get(source, LEGACY_SOURCE_NAMES.get(source, source))
+            row[label] = ref.get("score") or "—"
+            row[label + " · poluvreme"] = ref.get("ht") or "—"
         row["Poreklo"] = "Vraćena rezervna kopija" if event.get("restoredAt") else "Provera aplikacije"
         rows.append(row)
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")

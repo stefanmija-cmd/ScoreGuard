@@ -1,7 +1,7 @@
 import {normalizeName} from './model.mjs';
-export const TEAM_LINK_SOURCES=new Set(['flash','sofa','api','all']);
-export function normalizeTeamLink(raw){
- if(!raw||!TEAM_LINK_SOURCES.has(raw.source))throw Error('Izaberite Flashscore, Sofascore ili oba izvora.');
+export const TEAM_LINK_SOURCES=new Set(['flash','f24','api','all']);
+export function normalizeTeamLink(raw,{allowLegacy=false}={}){
+ if(!raw||!TEAM_LINK_SOURCES.has(raw.source)&&!(allowLegacy&&raw.source==='sofa'))throw Error('Izaberite Flashscore, Futbol24, API-Football ili sve izvore.');
  const names={};
  for(const key of ['internalName','sourceName']){
   if(typeof raw[key]!=='string'||!raw[key].trim()||raw[key].length>150||/[\x00-\x1f\x7f]/.test(raw[key]))throw Error('Unesite oba naziva kluba, najviše 150 znakova po nazivu.');
@@ -16,7 +16,7 @@ export function normalizeTeamLink(raw){
 export function teamLinkKey(link){return link.source+':'+[normalizeName(link.internalName),normalizeName(link.sourceName)].sort().join('|');}
 export function compileTeamAliases(configured={},links=[]){
  const result={};
- for(const source of ['flash','sofa','api']){
+ for(const source of ['flash','f24','api']){
   const parent=new Map();
   function root(name){if(!parent.has(name))parent.set(name,name);const p=parent.get(name);if(p!==name)parent.set(name,root(p));return parent.get(name);}
   function join(a,b){a=normalizeName(a);b=normalizeName(b);if(!a||!b)return;const x=root(a),y=root(b);if(x!==y)parent.set(x<y?y:x,x<y?x:y);}

@@ -311,7 +311,7 @@ def settings_page():
     else:
         st.info("Prvo uvezite mečeve. Izvore i automatiku možete izabrati tokom uvoza.")
     st.info("Zatvaranje kartice i odjava ne pauziraju uključen nadzor dok je Cloud instanca aktivna. Uspavljivanje ili gašenje instance prekida provere." if CLOUD_MODE else "Zatvaranje kartice i odjava ne pauziraju uključen serverski nadzor. Isključite automatiku ovde ako želite da zaustavite provere.")
-    st.warning("Sofascore je tokom razvoja vraćao HTTP 403. Streamlit ne uklanja zaštitu izvora; nedostupni rezultati ostaju neprovereni.")
+    st.info("Futbol24 je drugi izvor za live i završene utakmice. Njegovi nazivi klubova potvrđuju se posebno. Ako za produžetke ili penale nije izdvojen rezultat za 90 minuta, meč ostaje neproveren.")
     if not data.get("sourceConfiguration", {}).get("api"):
         st.info("API-Football je dodatni izvor koji zahteva ključ dobavljača. Dok nije podešen, za test izaberi Flashscore. Uputstvo za administratora je u CLOUD-START.md fajlu.")
     if data.get("operations"):

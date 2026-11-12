@@ -5,7 +5,8 @@ import hashlib
 import json
 
 BELGRADE = ZoneInfo("Europe/Belgrade")
-SOURCE_NAMES = {"flash": "Flashscore", "sofa": "Sofascore", "api": "API-Football"}
+SOURCE_NAMES = {"flash": "Flashscore", "f24": "Futbol24", "api": "API-Football"}
+LEGACY_SOURCE_NAMES = {"sofa": "Sofascore (arhiva)"}
 STATUS_NAMES = {"match": "Usaglašeno", "mismatch": "Neslaganje", "unverified": "Nije provereno"}
 WORK_NAMES = {"new": "Novo", "in_progress": "U obradi", "resolved": "Rešeno"}
 
