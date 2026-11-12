@@ -39,6 +39,7 @@ export function compileTeamAliases(configured = {}, links = []) {
   const result = {};
   for (const source of ["flash", "f24", "api"]) {
     const parent = new Map();
+    const targets = new Map();
     function root(name) {
       if (!parent.has(name)) parent.set(name, name);
       const p = parent.get(name);
@@ -46,9 +47,11 @@ export function compileTeamAliases(configured = {}, links = []) {
       return parent.get(name);
     }
     function join(a, b) {
+      const label = String(b ?? "");
       a = normalizeName(a);
       b = normalizeName(b);
       if (!a || !b) return;
+      if (!targets.has(b) || targets.get(b) === b) targets.set(b, label);
       const x = root(a),
         y = root(b);
       if (x !== y) parent.set(x < y ? y : x, x < y ? x : y);
@@ -57,9 +60,19 @@ export function compileTeamAliases(configured = {}, links = []) {
       join(name, canonical);
     for (const link of links)
       if (link.source === source || link.source === "all") join(link.internalName, link.sourceName);
+    // Keep the declared target's readable name: normalizing it would erase
+    // category boundaries such as the space before U19, Women or II.
+    const canonicalNames = new Map();
+    for (const [name, label] of targets) {
+      const group = root(name),
+        existing = canonicalNames.get(group);
+      if (!existing || name < normalizeName(existing)) canonicalNames.set(group, label);
+    }
     result[source] = {
       ...(configured[source] || {}),
-      teams: Object.fromEntries([...parent.keys()].map((name) => [name, root(name)])),
+      teams: Object.fromEntries(
+        [...parent.keys()].map((name) => [name, canonicalNames.get(root(name)) || root(name)]),
+      ),
     };
   }
   return result;

@@ -60,7 +60,9 @@ export function teamSimilarity(left, right, aliases = {}) {
   // happens to look like another age group, a women's team or a reserve side.
   if ((explicitLeft || explicitRight) && clubProfile(leftName).key === clubProfile(rightName).key)
     return 1;
-  return a.category === b.category ? nameSimilarity(leftName, rightName) : 0;
+  return clubProfile(leftName).category === clubProfile(rightName).category
+    ? nameSimilarity(leftName, rightName)
+    : 0;
 }
 function scoredClubCandidates(internal, events, date, aliases = {}, preFiltered = false) {
   const teams = String(internal.match || "").split(/\s+[–—-]\s+/);

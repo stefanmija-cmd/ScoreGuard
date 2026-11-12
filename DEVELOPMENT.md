@@ -55,3 +55,11 @@ Puni izvorni paket sadrži i testove Sites pakovanja i interfejsa; on se gradi k
 - `requestTimeout` Node servisa iznosi 90 sekundi i odnosi se na prijem zahteva. Python klijent ima 5 sekundi za povezivanje
   i 90 sekundi za čitanje odgovora; ručna provera iz Sites panela takođe ima rok od 90 sekundi.
   Pojedinačni zahtevi prema javnim izvorima zadržavaju svoj kraći rok. Interval provere ostaje 300 sekundi.
+
+## Provera neuspelog uparivanja i prekida odgovora
+
+Regresioni testovi proveravaju da neuspešno tačno uparivanje nastavlja pretragu punog skupa kandidata, da se selekcija poredi nakon primene alijasa i da brisanje povezivanja vraća samo aktivne izvore. Prekid stream-a daje klasifikovan TIMEOUT ili NETWORK; nepotpun odgovor ne postaje rezultat. Poznati SourceError kodovi i ograničenje veličine odgovora ostaju sačuvani, a čitač se oslobađa.
+
+Test ponovnog traženja koristi Node ESM mock u izdvojenom procesu sa zastavicom `--experimental-test-module-mocks`. Ta zastavica koristi se samo tokom testa; rad servisa je ne zahteva.
+
+Kompajliranje alijasa zadržava čitljiv ciljni naziv, uz normalizovane ključeve za pretragu. Time se pri proveri kategorije čuvaju granice reči u oznakama poput U19, Women i II.

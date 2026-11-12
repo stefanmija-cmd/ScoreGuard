@@ -59,15 +59,25 @@ export async function fetchText(
   if (!reader) return { text: "", headers: response.headers };
   const chunks = [];
   let size = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > maxBytes) {
-      await reader.cancel();
-      throw new SourceError("TOO_LARGE", "Odgovor izvora je prevelik.");
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel().catch(() => {});
+        throw new SourceError("TOO_LARGE", "Odgovor izvora je prevelik.");
+      }
+      chunks.push(value);
     }
-    chunks.push(value);
+  } catch (error) {
+    if (error instanceof SourceError) throw error;
+    throw new SourceError(
+      error?.name === "TimeoutError" || error?.name === "AbortError" ? "TIMEOUT" : "NETWORK",
+      "Izvor nije odgovorio u predviđenom roku ili veza nije dostupna.",
+    );
+  } finally {
+    reader.releaseLock();
   }
   const bytes = new Uint8Array(size);
   let offset = 0;

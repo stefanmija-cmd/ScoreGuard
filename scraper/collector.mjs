@@ -219,7 +219,9 @@ export function createCollector({
                 ...(data.slots.get(slot) || []),
               ]),
             ];
-        const found = exact || matchEvent(m, candidates, date, effectiveAliases[source], true);
+        const found = exact?.event
+          ? exact
+          : matchEvent(m, candidates, date, effectiveAliases[source], true);
         const eventAgeMs = found.event?.sourceAgeMs ?? data.sourceAgeMs;
         refs[source] = found.event
           ? {

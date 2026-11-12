@@ -72,6 +72,40 @@ test("configured and transitive aliases are authoritative in either direction", 
   );
 });
 
+test("fuzzy matching checks the category of canonical names after applying aliases", () => {
+  const aliases = { teams: { colombeyouth: "Colombe Women" } };
+  assert.ok(teamSimilarity("Colombe Youth", "Colombe Women FC", aliases) >= 0.8);
+  const internal = { ...match, match: "Colombe Youth – Victoria United" };
+  const source = { ...event, home: "Colombe Women FC" };
+  assert.equal(matchEvent(internal, [source], date, aliases).event.id, source.id);
+});
+
+test("a canonical age marker prevents fuzzy matching to a senior variant", () => {
+  const aliases = { teams: { colombe: "Colombe U19" } };
+  assert.equal(teamSimilarity("Colombe", "Colombes", aliases), 0);
+  assert.equal(teamSimilarity("Colombe", "Colombe U19", aliases), 1);
+});
+
+test("compiled aliases preserve readable targets for fuzzy category checks", () => {
+  const variants = [
+    compileTeamAliases({ flash: { teams: { colombeu19: "Different Youth Club" } } }).flash,
+    compileTeamAliases({}, [
+      { source: "flash", internalName: "Colombe U19", sourceName: "Different Youth Club" },
+    ]).flash,
+  ];
+  for (const aliases of variants) {
+    assert.ok(teamSimilarity("Colombe U19", "Colombe", aliases) < 0.55);
+    assert.ok(teamSimilarity("Colombe U19", "Different Youth Club FC", aliases) >= 0.8);
+    const found = matchEvent(
+      { ...match, match: "Colombe U19 – Victoria Utd Limbe" },
+      [{ ...event, home: "Different Youth Club FC" }],
+      date,
+      aliases,
+    );
+    assert.equal(found.event.id, event.id);
+  }
+});
+
 test("unrelated explicit aliases do not bypass the category of another team or the kickoff", () => {
   const aliases = compileTeamAliases({}, [
     { source: "flash", internalName: "Colombe U19", sourceName: "Different Youth Club" },

@@ -219,7 +219,7 @@ export function createWebApp({
               user.id,
             );
             await aliasesChanged(shared, user.id);
-            json(res, 200, { ...result, aliases: teamAliases.list(user.id) });
+            json(res, 200, { ...result, aliases: activeLinks(user.id) });
             return true;
           }
           json(res, 405, { error: "Nedozvoljen metod." });
