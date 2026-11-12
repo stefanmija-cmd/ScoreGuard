@@ -12,6 +12,7 @@ ALIAS_SOURCE_NAMES = {"flash": "Flashscore", "f24": "Futbol24", "api": "API-Foot
 def render_team_aliases(api, snapshot, cloud_mode, handle_error):
     st.title("Poveži nazive klubova")
     st.caption("Sačuvaj različite nazive za isti klub i istu selekciju. Lična povezivanja važe za tvoj nalog; zajednička povezivanja administratora koriste svi operateri.")
+    st.info("Jednoznačni parovi povezuju se automatski uz najmanje 80% sličnosti svakog kluba, isti datum i vreme. Ručne veze koristi za slabija ili nejasna poklapanja i prevode naziva.")
     try:
         data = api.team_aliases()
     except ApiError as error:

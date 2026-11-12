@@ -110,7 +110,11 @@ Ovo je verzija za trenutne testove. Za stalni operaterski rad i trajno čuvanje 
 
 Otvorite **Poveži nazive klubova** u levom meniju ili kliknite isto dugme u detaljima meča. Izaberite klub iz internog spiska ili unesite njegov naziv ručno, izaberite izvor i upišite naziv sa tog izvora. Potvrdite da je to isti klub i ista selekcija, pa kliknite **Sačuvaj povezivanje**.
 
-Primer: interno `Victoria Utd Limbe`, Flashscore `Victoria United`. Za tu vezu više nije potrebno menjati konfiguraciju naloga ili Secrets. Datum, vreme i redosled domaćina i gosta i dalje moraju da se poklapaju.
+Mečevi se prvo povezuju preko tačnih naziva i potvrđenih veza, a zatim automatski uz najmanje **80% sličnosti svakog kluba**. Primer `Colombe – Victoria Utd Limbe` prema `Colombe – Victoria United` sada prolazi automatski (gost oko 84%), ako nema bliskog drugog kandidata u istom terminu. Datum, vreme, redosled domaćin/gost i selekcije ostaju obavezni. Različiti nazivi takmičenja nisu prepreka. Za slabije poklapanje, prevode naziva ili nejasan par ostaje ručno povezivanje; Secrets se ne menjaju.
+
+Drugi kandidat mora zaostajati najmanje 5 procentnih poena u prosečnoj sličnosti oba kluba. U suprotnom se prikazuju predlozi za potvrdu, čak i kada najbolji prelazi 80%. Detalji pokazuju procenat sličnosti za svaki klub. To nije procenat pouzdanosti rezultata: rezultat, poluvreme, status i svežina izvora proveravaju se zasebno. Automatska procena važi za pojedinačni meč i ne upisuje trajnu vezu klubova.
+
+Posle ažuriranja koda izaberite **Manage app → Reboot app**, pa **Proveri sada**. Spisak nije potrebno ponovo unositi ako je sačuvan. Interval od pet minuta ostaje isti.
 
 Povezivanja se čuvaju za vaš nalog i koriste i u budućim uvozima. Posle izmene prethodni rezultat provere se poništava: kliknite **Proveri sada** ili sačekajte uključenu automatiku. Drugi operater ima sopstvenu listu povezivanja.
 

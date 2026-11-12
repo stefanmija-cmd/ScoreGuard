@@ -1,4 +1,4 @@
-import {teamIdentityKey} from './team-matching.mjs';
+import {teamIdentityKey,similarityMatch} from './team-matching.mjs';
 export const INTERVAL_MS = 5 * 60 * 1000;
 export const MAX_MATCHES = 1000;
 export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
@@ -75,7 +75,9 @@ export function matchEvent(internal,events,date,aliases={},preFiltered=false) {
  if(homeKey===awayKey)return {reason:'Oba tima su povezana sa istim klubom. Proverite sačuvana povezivanja naziva.'};
  // Competition names are display metadata. Club pair, home/away order and kickoff identify the event.
  const candidates=events.filter(e=>(preFiltered||Number.isFinite(e.startTimestamp)&&dateKey(e.startTimestamp*1000)===date&&timeKey(e.startTimestamp*1000)===internal.time)&&canonical(e.home)===homeKey&&canonical(e.away)===awayKey);
- return candidates.length===1?{event:candidates[0]}:{reason:candidates.length?'Više mogućih mečeva sa istim klubovima, datumom i vremenom; potrebno je ručno uparivanje. Naziv takmičenja ne bira se kao kriterijum.':'Nema tačnog poklapanja domaćina, gosta, datuma i vremena početka. Naziv takmičenja nije uslov za povezivanje.'};
+ if(candidates.length===1)return {event:candidates[0],matching:{method:'exact'}};
+ if(candidates.length>1)return {reason:'Više mogućih mečeva sa istim klubovima, datumom i vremenom; potrebno je ručno uparivanje. Naziv takmičenja ne bira se kao kriterijum.'};
+ return similarityMatch(internal,events,date,aliases,preFiltered);
 }
 export function eventReference(event,checkedAt) {
  const base={eventId:event.id,phase:event.phase,eventState:event.state,phaseLabel:PHASE_LABELS[event.phase]||PHASE_LABELS.unknown,checkedAt,url:event.url,ht:event.halfTime,current:event.current,regularTime:event.regularTime,scoreBasis:'regular',sourceUpdatedAt:event.sourceUpdatedAt||null,sourceHome:event.home||null,sourceAway:event.away||null,sourceLeague:event.fullLeague||event.league||null};

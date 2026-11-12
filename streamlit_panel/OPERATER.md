@@ -20,13 +20,15 @@ Spisak može imati do **1.000 utakmica**. Pregled prikazuje do 100 po strani; pr
 ## 2. Kako se mečevi povezuju i rezultati porede
 
 - Meč se povezuje po domaćinu, gostu, datumu i vremenu početka. Redosled domaćina i gosta mora biti ispravan.
+- Najpre se traže identični nazivi ili sačuvana povezivanja. Ako toga nema, meč se automatski povezuje kada je sličnost **svakog kluba najmanje 80%**, uz isti datum, vreme i selekciju. U detaljima vidiš izvorne nazive i procenat za oba kluba.
+- Ako postoji blizak drugi kandidat, razlika u prosečnoj sličnosti mora biti najmanje **5 procentnih poena**. U suprotnom meč ostaje za ručnu potvrdu. Naziv takmičenja i rezultat ne odlučuju koji je meč izabran.
 - Naziv takmičenja služi za prikaz. Različiti nazivi, npr. „Venecuela Kup“ i „Copa Venezuela“, ne sprečavaju povezivanje.
 - Proverava se trenutni rezultat regularnog vremena i rezultat poluvremena kada je primenljiv. Produžeci i penali ne dodaju se rezultatu za 90 minuta.
 - U prvom poluvremenu završen rezultat poluvremena još nije dostupan. Minuti golova se ne proveravaju.
 - U kopiji iz internog programa **HT označava prvo, a FT drugo poluvreme**. Period utakmice prikazan je i u detaljima meča.
 - Oznaka **FT / 2nd half** može ostati i nakon kraja utakmice. Kada izvor potvrdi da je meč završen, ta interna oznaka sama ne izaziva neslaganje. Rezultat i poluvreme i dalje moraju da se poklope; nedostajući ili zastareli podaci ne potvrđuju rezultat.
 
-Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova. Različite nazive istog kluba poveži kroz **Poveži nazive klubova**. Kada postoji više mogućih mečeva, aplikacija ne bira proizvoljno.
+Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova. Za slabije poklapanje ili nejasan par koristi predloge ili **Poveži nazive klubova**. Na primer, „Victoria Utd Limbe” i „Victoria United” imaju oko 84% sličnosti i povezuju se automatski kada je ceo par jednoznačan. Procenat opisuje sličnost naziva, a ne pouzdanost sportskog rezultata.
 
 ## 3. Provera na 5 minuta i osvežavanje pregleda
 
@@ -85,7 +87,9 @@ U istom ekranu možeš pregledati i ukloniti sačuvane veze. Kroz **Preuzmi pove
 
 ## 8. Predlozi za povezivanje
 
-Poznate skraćenice, poput **Utd / United**, prepoznaju se automatski kada postoji samo jedan odgovarajući meč. Kod nejasnih naziva otvori detalje i pogledaj **Predloge povezivanja**. Izaberi meč, proveri oba kluba i selekcije, pa klikni **Potvrdi ovaj par timova**. Aplikacija pamti vezu i pokreće proveru. Sam predlog ne potvrđuje rezultat. Različiti uzrasti, ženske i rezervne ekipe čuvaju se odvojeno.
+Poznate skraćenice, poput **Utd / United**, i jednoznačni parovi sa najmanje **80% sličnosti svakog kluba** povezuju se automatski na svakoj proveri. Za automatski povezan meč ne moraš ništa da potvrđuješ. Ova procena ne dodaje trajnu vezu između naziva klubova.
+
+Kod slabijih ili bliskih poklapanja otvori detalje i pogledaj **Predloge povezivanja**. Izaberi meč, proveri oba kluba i selekcije, pa klikni **Potvrdi ovaj par timova**. Aplikacija pamti potvrđenu vezu i pokreće proveru. Sam predlog ne potvrđuje rezultat. Različiti uzrasti, ženske i rezervne ekipe čuvaju se odvojeno. Automatski povezan meč i dalje može imati neslaganje ili nedovoljno sveže podatke.
 
 ## 9. Prioritet i zajednička obrada
 

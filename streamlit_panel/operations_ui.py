@@ -85,6 +85,8 @@ def render_suggestions(api, match, sources, snapshot, handle_error):
         key = match["id"] + "-" + source
         candidate = st.selectbox("Mogući meč na izvoru", suggestions,
                                  format_func=lambda item: item["home"] + " – " + item["away"] + " · " + item.get("league", ""), key="suggestion-" + key)
+        if candidate and "homeSimilarity" in candidate and "awaySimilarity" in candidate:
+            st.caption("Sličnost naziva: domaćin " + format(candidate["homeSimilarity"] * 100, ".1f") + "% · gost " + format(candidate["awaySimilarity"] * 100, ".1f") + "%.")
         st.caption("Potvrdi samo ako su domaćin i gost isti klubovi i iste selekcije. Predlog sam ne potvrđuje rezultat.")
         shared = st.checkbox("Poveži za sve operatere", key="suggestion-shared-" + key) if st.session_state.get("user", {}).get("role") == "admin" else False
         if st.button("Potvrdi ovaj par timova", key="suggestion-confirm-" + key):

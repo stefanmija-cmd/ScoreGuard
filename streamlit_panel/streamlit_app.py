@@ -126,6 +126,9 @@ def render_match_details(matches, sources, snapshot=None, operations_enabled=Fal
                 st.caption("Odgovor izvora je pri preuzimanju bio star " + str(int(reference["sourceAgeMs"] // 1000)) + " sekundi. Starost se računa i tokom zajedničkog korišćenja podataka.")
             if reference.get("sourceHome") and reference.get("sourceAway"):
                 st.caption("Uparen meč: " + reference["sourceHome"] + " – " + reference["sourceAway"] + " · Takmičenje izvora: " + (reference.get("sourceLeague") or "—"))
+            matching = reference.get("matching") or {}
+            if matching.get("method") == "similarity":
+                st.caption("Automatsko povezivanje · sličnost naziva: domaćin " + format(matching["homeSimilarity"] * 100, ".1f") + "% · gost " + format(matching["awaySimilarity"] * 100, ".1f") + "%. Prag je 80% za svaki klub, uz isti datum i vreme. Ovo nije procenat pouzdanosti rezultata.")
             if reference.get("reason"):
                 st.info(reference["reason"])
             if reference.get("stale"):

@@ -47,7 +47,7 @@ export function createCollector({fetcher=globalThis.fetch,clock=()=>Date.now(),p
    health[source]={state:failures.length?(successes.length?'partial':'unavailable'):'available',code:failures[0]?.code||'OK',eventCount,checkedAt:new Date(clock()).toISOString(),message:failures.length?failures.map(f=>f.date+' · '+f.message).join(' '):SOURCE_NAMES[source]+': preuzeto '+eventCount+' fudbalskih mečeva za '+dates.length+' kalendarskih dana.',dates:successes,failures};
   }));
   const indexes={};
-  for(const source of watch.sources){indexes[source]={};for(const date of dates){const data=feeds[source]?.[date];if(!data)continue;const pairs=new Map(),homes=new Map(),aways=new Map();const add=(map,key,event)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(event);};for(const [slot,events]of data.slots)for(const event of events){const home=canonicalClubKey(event.home,effectiveAliases[source]),away=canonicalClubKey(event.away,effectiveAliases[source]);add(pairs,slot+'|'+home+'|'+away,event);add(homes,slot+'|'+home,event);add(aways,slot+'|'+away,event);}indexes[source][date]={pairs,homes,aways};}}
+  for(const source of watch.sources){indexes[source]={};for(const date of dates){const data=feeds[source]?.[date];if(!data)continue;const pairs=new Map();for(const [slot,events]of data.slots)for(const event of events){const home=canonicalClubKey(event.home,effectiveAliases[source]),away=canonicalClubKey(event.away,effectiveAliases[source]),key=slot+'|'+home+'|'+away;if(!pairs.has(key))pairs.set(key,[]);pairs.get(key).push(event);}indexes[source][date]={pairs};}}
   const checkedAt=new Date(clock()).toISOString();
   const results=watch.matches.map(m=>{
    const date=m.date||watch.date,refs={};for(const source of watch.sources){
@@ -55,10 +55,10 @@ export function createCollector({fetcher=globalThis.fetch,clock=()=>Date.now(),p
     if(!data){refs[source]={state:'unverified',reason:health[source].failures?.find(f=>f.date===date)?.message||health[source].message,checkedAt};continue;}
     const slot=date+' '+m.time,teams=m.match.split(/\s+[–—-]\s+/),index=indexes[source][date],home=canonicalClubKey(teams[0],effectiveAliases[source]),away=canonicalClubKey(teams[1],effectiveAliases[source]);
     const events=index.pairs.get(slot+'|'+home+'|'+away)||[],sourceCheckedAt=new Date(data.dataFreshAt).toISOString();
-    const found=matchEvent(m,events,date,effectiveAliases[source],true);
-    const candidates=found.event?[]:index.homes.get(slot+'|'+home)||index.aways.get(slot+'|'+away)||data.slots.get(slot)||[];
+    const candidates=data.slots.get(slot)||[];
+    const found=matchEvent(m,events.length?events:candidates,date,effectiveAliases[source],true);
     const eventAgeMs=found.event?.sourceAgeMs??data.sourceAgeMs;
-    refs[source]=found.event?{...eventReference(found.event,new Date(data.freshBaseAt-eventAgeMs).toISOString()),fetchedAt:new Date(data.fetchedAt).toISOString(),sourceAgeMs:eventAgeMs}:{state:'unverified',reason:found.reason,checkedAt:sourceCheckedAt,fetchedAt:new Date(data.fetchedAt).toISOString(),suggestions:candidateMatches(m,candidates,date,effectiveAliases[source],3,true).map(candidate=>({...candidate,checkedAt:sourceCheckedAt}))};
+    refs[source]=found.event?{...eventReference(found.event,new Date(data.freshBaseAt-eventAgeMs).toISOString()),matching:found.matching,fetchedAt:new Date(data.fetchedAt).toISOString(),sourceAgeMs:eventAgeMs}:{state:'unverified',reason:found.reason,checkedAt:sourceCheckedAt,fetchedAt:new Date(data.fetchedAt).toISOString(),suggestions:candidateMatches(m,candidates,date,effectiveAliases[source],3,true).map(candidate=>({...candidate,checkedAt:sourceCheckedAt}))};
    }return {id:m.id,refs};
   });
   return {results,health,startedAt,checkedAt,intervalSeconds:300};
