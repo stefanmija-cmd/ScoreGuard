@@ -87,7 +87,7 @@ U istom ekranu možeš pregledati i ukloniti sačuvane veze. Kroz **Preuzmi pove
 
 ## 8. Predlozi za povezivanje
 
-Poznate skraćenice, poput **Utd / United**, i jednoznačni parovi sa najmanje **80% sličnosti svakog kluba** povezuju se automatski na svakoj proveri. Za automatski povezan meč ne moraš ništa da potvrđuješ. Ova procena ne dodaje trajnu vezu između naziva klubova.
+Poznate skraćenice, poput **Utd / United**, i jednoznačni parovi sa najmanje **80% sličnosti svakog kluba** povezuju se automatski na svakoj proveri. Oznaka **Wom** iz internog programa prepoznaje se kao **W** na Flashscore-u i **(W)** na Futbol24, npr. **PSG Wom ↔ PSG W ↔ PSG (W)**. To je ženska ekipa; muška ekipa, drugi uzrast ili rezervna selekcija ostaju odvojeni. Za automatski povezan meč ne moraš ništa da potvrđuješ. Ova procena ne dodaje trajnu vezu između naziva klubova.
 
 Kod slabijih ili bliskih poklapanja otvori detalje i pogledaj **Predloge povezivanja**. Izaberi meč, proveri oba kluba i selekcije, pa klikni **Potvrdi ovaj par timova**. Aplikacija pamti potvrđenu vezu i pokreće proveru. Sam predlog ne potvrđuje rezultat. Različiti uzrasti, ženske i rezervne ekipe čuvaju se odvojeno. Automatski povezan meč i dalje može imati neslaganje ili nedovoljno sveže podatke.
 

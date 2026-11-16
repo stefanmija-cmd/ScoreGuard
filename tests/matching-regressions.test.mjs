@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createCollector } from "../scraper/collector.mjs";
 import { matchEvent } from "../scraper/model.mjs";
-import { teamSimilarity } from "../scraper/team-matching.mjs";
+import { teamSimilarity, teamIdentityKey } from "../scraper/team-matching.mjs";
 import { compileTeamAliases } from "../scraper/team-aliases.mjs";
 
 const date = "2026-11-11",
@@ -27,6 +27,84 @@ const match = {
   score: "1:0",
   ht: "0:0",
 };
+
+test("standalone Wom, W and (W) identify the same womens team regardless of case", () => {
+  for (const [internal, source] of [
+    ["PSG Wom", "PSG W"],
+    ["PSG Wom", "PSG (W)"],
+    ["Lyon (WOM)", "Lyon (W)"],
+    ["Zürich wom.", "Zurich W"],
+    ["Wom PSG", "W PSG"],
+  ]) {
+    assert.equal(teamIdentityKey(internal), teamIdentityKey(source));
+    assert.equal(teamSimilarity(internal, source), 1);
+    assert.equal(teamSimilarity(source, internal), 1);
+  }
+});
+
+test("both providers link Wom teams exactly and choose womens fixtures over simultaneous mens fixtures", async () => {
+  const female = { ...event, id: "female", home: "PSG W", away: "Lyon W" };
+  const male = {
+    ...event,
+    id: "male",
+    home: "PSG",
+    away: "Lyon",
+    current: "0:2",
+    regularTime: "0:2",
+  };
+  const collector = createCollector({
+    clock: () => now,
+    providers: {
+      flash: async () => [male, female],
+      f24: async () => [male, { ...female, id: "f24-female", home: "PSG (W)", away: "Lyon (W)" }],
+    },
+  });
+  const result = await collector.collect({
+    date,
+    sources: ["flash", "f24"],
+    matches: [
+      { ...match, match: "PSG Wom – Lyon Wom" },
+      { ...match, id: "men", match: "PSG – Lyon", score: "0:2" },
+    ],
+  });
+  for (const source of ["flash", "f24"]) {
+    const women = result.results[0].refs[source],
+      men = result.results[1].refs[source];
+    assert.equal(women.state, "verified");
+    assert.equal(women.matching.method, "exact");
+    assert.equal(women.eventId, source === "flash" ? "female" : "f24-female");
+    assert.equal(women.score, "1:0");
+    assert.equal(men.eventId, "male");
+    assert.equal(men.score, "0:2");
+  }
+});
+
+test("Wom normalization does not merge mens teams, different ages or reserve squads", () => {
+  const internal = { ...match, match: "PSG Wom – Lyon Wom" };
+  const women = { ...event, home: "PSG W", away: "Lyon W" };
+  for (const extra of [
+    { home: "PSG" },
+    { away: "Lyon" },
+    { home: "PSG W U19" },
+    { home: "PSG W B" },
+  ])
+    assert.equal(matchEvent(internal, [{ ...women, ...extra }], date).event, undefined);
+  assert.equal(
+    matchEvent(
+      { ...internal, match: "PSG Wom U19 – Lyon Wom U19" },
+      [{ ...women, home: "PSG W U21", away: "Lyon W U21" }],
+      date,
+    ).event,
+    undefined,
+  );
+  assert.equal(matchEvent(internal, [women, { ...women, id: "duplicate" }], date).event, undefined);
+});
+
+test("Wom inside a club word is preserved and does not mark the team as female", () => {
+  assert.equal(teamIdentityKey("Wombwell Town"), "wombwelltown");
+  assert.equal(teamIdentityKey("Wombats United"), "wombatsunited");
+  assert.equal(teamSimilarity("Wombwell Town", "Wombwell Town W"), 0);
+});
 
 test("an isolated F initial does not classify a club as a womens team", () => {
   const internal = { ...match, match: "F. C. Porto – Benfica FC" },

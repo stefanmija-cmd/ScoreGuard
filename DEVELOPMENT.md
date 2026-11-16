@@ -63,3 +63,5 @@ Regresioni testovi proveravaju da neuspešno tačno uparivanje nastavlja pretrag
 Test ponovnog traženja koristi Node ESM mock u izdvojenom procesu sa zastavicom `--experimental-test-module-mocks`. Ta zastavica koristi se samo tokom testa; rad servisa je ne zahteva.
 
 Kompajliranje alijasa zadržava čitljiv ciljni naziv, uz normalizovane ključeve za pretragu. Time se pri proveri kategorije čuvaju granice reči u oznakama poput U19, Women i II.
+
+Samostalna oznaka `Wom` normalizuje se u `W`, uključujući Futbol24 oblik `(W)`. Normalizacija zadržava oznaku ženske ekipe i ne menja deo reči u nazivima poput Wombwell. Testovi porede oba izvora, istovremene muške i ženske mečeve, uzraste i rezervne selekcije.

@@ -4,7 +4,11 @@ export const AUTO_MATCH_THRESHOLD = 0.8;
 export const AUTO_MATCH_MARGIN = 0.05;
 // Deterministic abbreviations are safe only inside a unique fixture candidate.
 export function teamIdentityKey(name) {
-  return normalizeName(String(name || "").replace(/\butd\b/gi, "United"));
+  return normalizeName(
+    String(name || "")
+      .replace(/\butd\b/gi, "United")
+      .replace(/\bwom\b/gi, "W"),
+  );
 }
 function category(name) {
   const text = String(name || "")
@@ -13,7 +17,7 @@ function category(name) {
     .toLowerCase();
   const age = text.match(/\b(?:u|under)[\s-]?(\d{1,2})\b/)?.[1] || "";
   const women =
-    /\b(women|womens|woman|ladies|female|feminine|femenin[oa]|feminin|fem|w|zene|zenska|zenski)\b/.test(
+    /\b(women|womens|woman|wom|ladies|female|feminine|femenin[oa]|feminin|fem|w|zene|zenska|zenski)\b/.test(
       text,
     );
   const reserves = /\b(iii|c team)\b|\bc\s*\)?$/.test(text)
