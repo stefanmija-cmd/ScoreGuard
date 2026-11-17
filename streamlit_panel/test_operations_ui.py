@@ -5,7 +5,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
-from streamlit_panel.ui_test_helpers import score_table, ScoreTableParser, rendered_table
+from streamlit_panel.ui_test_helpers import score_table
 from streamlit_panel.operations_ui import detect_alerts
 from streamlit_panel.presentation import input_age
 
@@ -216,30 +216,14 @@ class OperationsUITests(unittest.TestCase):
             app.run()
             self.assertEqual(len(app.get("audio")), 0)
 
-    def test_shared_queue_and_backup_are_available_without_installation_in_help(self):
+    def test_shared_tab_and_counters_are_removed_and_backup_remains_available(self):
         with patch("streamlit_panel.api_client.ApiClient", FakeApi):
             app = self.app()
-            FakeApi.workflow["workStatus"] = "resolved"
-            app.sidebar.radio[0].set_value("Zajednička neslaganja").run()
-            self.assertFalse(app.exception)
-            self.assertEqual(score_table(app, "sg-shared").iloc[0]["Spiskova"], 2)
-            self.assertEqual(score_table(app, "sg-shared").iloc[0]["Provera"], "Neslaganje")
-            self.assertEqual(
-                [
-                    (part["column"], part["part"], part["value"])
-                    for part in ScoreTableParser(rendered_table(app, "sg-shared")).differences
-                ],
-                [("Source", "score-home", "1"), ("Flashscore", "score-home", "2")],
-            )
-            self.assertTrue(
-                {"Prioritet", "Obrada", "Operater"}.isdisjoint(
-                    score_table(app, "sg-shared").columns
-                )
-            )
-            self.assertEqual(FakeApi.case_requests[-1], (0, True, "", ""))
+            self.assertNotIn("Zajednička neslaganja", app.sidebar.radio[0].options)
+            self.assertEqual(len(app.metric), 0)
+            self.assertEqual(FakeApi.case_requests, [])
             self.assertEqual(FakeApi.calls, [])
             self.assertEqual(len(app.text_area), 0)
-            self.assertFalse(any("slučaj" in button.label for button in app.button))
             app.sidebar.radio[0].set_value("Podešavanja").run()
             app.button(key="prepare_backup").click().run()
             self.assertFalse(app.exception)
@@ -249,6 +233,21 @@ class OperationsUITests(unittest.TestCase):
             text = "\n".join(item.value for item in app.markdown)
             self.assertNotIn("SCOREGUARD_STORAGE_KEY", text)
             self.assertNotIn("docker compose", text)
+            self.assertNotIn("Zajednička neslaganja", text)
+
+    def test_previously_selected_shared_tab_returns_to_monitor(self):
+        with patch("streamlit_panel.api_client.ApiClient", FakeApi):
+            app = AppTest.from_file(
+                str(Path(__file__).with_name("streamlit_app.py")), default_timeout=20
+            )
+            app.session_state["auth_cookie"] = "test-only-cookie"
+            app.session_state["user"] = {"id": "operator-milos"}
+            app.session_state["page"] = "Zajednička neslaganja"
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.sidebar.radio[0].value, "Pregled mečeva")
+            self.assertEqual(len(app.metric), 0)
+            self.assertEqual(score_table(app).iloc[0]["Provera"], "Neslaganje")
 
 
 if __name__ == "__main__":

@@ -323,14 +323,15 @@ test("same-origin loaded frames and open shadow roots need no additional request
             ? [{ tagName: "IFRAME", contentDocument: gridDocument }]
             : []
           : selector === "*"
-          ? useFrame
-            ? []
-            : [{ shadowRoot: gridDocument }]
-          : [],
+            ? useFrame
+              ? []
+              : [{ shadowRoot: gridDocument }]
+            : [],
     };
     const result = vm.runInNewContext("(" + captureSnapshot.toString() + ")()", { document });
     assert.equal(result.count, 1);
-    assert.equal(result.diagnostics.documents, 2);
+    assert.equal(result.diagnostics.documents, useFrame ? 2 : 1);
+    assert.equal(result.diagnostics.shadowRoots, useFrame ? 0 : 1);
   }
 });
 test("unavailable frames produce a structured error with counts only", () => {
@@ -373,4 +374,84 @@ test("extraction errors do not return a previously cached snapshot", async () =>
   runtime.session["scoreguard-snapshot"] = { text: "old data" };
   await assert.rejects(runtime.handle({ ...pull, refresh: true }, bridge), /Nema prepoznatih/);
   await assert.rejects(runtime.handle(pull, bridge), /Nema prepoznatih/);
+});
+
+function loadedGridPage(toolbarCount = 80) {
+  const visited = [];
+  const empty = () => ({
+    querySelectorAll: () => {
+      visited.push("toolbar");
+      return [];
+    },
+  });
+  const toolbar = Array.from({ length: toolbarCount }, () => ({ shadowRoot: empty() }));
+  const gridDocument = {
+    querySelectorAll: (selector) => {
+      visited.push("grid");
+      return selector === "*" || selector === "iframe, frame" || selector === "#matches"
+        ? []
+        : [table()];
+    },
+  };
+  const grid = { tagName: "VAADIN-GRID", shadowRoot: gridDocument, querySelectorAll: () => [] };
+  const document = {
+    querySelectorAll: (selector) =>
+      selector === "*" ? [...toolbar, grid] : selector === "iframe, frame" ? [] : [grid],
+  };
+  return { document, visited };
+}
+test("a grid remains readable after more than twenty unrelated shadow components", () => {
+  const { document, visited } = loadedGridPage();
+  const result = vm.runInNewContext("(" + captureSnapshot.toString() + ")()", { document });
+  assert.equal(result.count, 1);
+  assert.equal(result.diagnostics.documents, 1);
+  assert.equal(result.diagnostics.shadowRoots, 81);
+  assert.equal(result.diagnostics.traversalLimited, false);
+  assert.ok(visited.indexOf("grid") < visited.indexOf("toolbar"));
+});
+test("a selected grid host reads its internal table and skips unrelated shadow components", () => {
+  const { document } = loadedGridPage(2100);
+  const result = vm.runInNewContext("(" + captureSnapshot.toString() + ")('#matches')", {
+    document,
+  });
+  assert.equal(result.count, 1);
+  assert.equal(result.diagnostics.shadowRoots, 1);
+  assert.equal(result.diagnostics.traversalLimited, false);
+});
+test("reaching the traversal limit returns an error instead of an incomplete list", () => {
+  const { document } = loadedGridPage(2100);
+  const result = vm.runInNewContext("(" + captureSnapshot.toString() + ")('',true)", { document });
+  assert.equal(result.text, undefined);
+  assert.equal(result.diagnostics.traversalLimited, true);
+  assert.match(result.error, /potpun pregled/);
+});
+test("slotted football cells produce the native import format without reading form values", () => {
+  const cells = fields.map((value) => {
+    const privateInput = {
+      tagName: "INPUT",
+      get value() {
+        throw Error("form value must not be read");
+      },
+      textContent: "secret-form-value",
+    };
+    const content = {
+      tagName: "VAADIN-GRID-CELL-CONTENT",
+      childNodes: [{ nodeType: 3, nodeValue: value }, privateInput],
+    };
+    const slot = { tagName: "SLOT", assignedNodes: () => [content] };
+    return { innerText: "", childNodes: [slot], querySelectorAll: () => [slot] };
+  });
+  const grid = {
+    tagName: "DIV",
+    querySelectorAll: () => [{ getClientRects: () => [{}], querySelectorAll: () => cells }],
+  };
+  const result = capture([grid]);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  assert.equal(imported.rows[0].internalId, "72499");
+  assert.equal(imported.rows[0].score, "0:0");
+  assert.ok(result.diagnostics.slottedCells >= 12);
+  assert.doesNotMatch(result.text, /secret-form-value/);
 });

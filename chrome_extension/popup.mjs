@@ -26,8 +26,14 @@ async function show() {
   if (state.diagnostics) {
     const d = state.diagnostics;
     $("diagnostics").textContent =
-      "Verzija: 0.1.1\nDokumenti: " +
+      "Verzija: 0.1.2\nDokumenti: " +
       d.documents +
+      "\nShadow delovi: " +
+      (d.shadowRoots || 0) +
+      "\nĆelije kroz slotove: " +
+      (d.slottedCells || 0) +
+      "\nPretraga ograničena: " +
+      (d.traversalLimited ? "da" : "ne") +
       "\nTabele: " +
       d.tables +
       "\nGrid komponente: " +

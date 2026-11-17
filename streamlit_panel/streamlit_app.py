@@ -24,7 +24,6 @@ from streamlit_panel.operations_ui import (
     render_sound,
     render_suggestions,
     render_timeline,
-    render_cases,
     render_backup,
 )
 
@@ -100,6 +99,8 @@ except ApiError as error:
     st.stop()
 
 st.session_state["user"] = identity
+if st.session_state.get("page") == "Zajednička neslaganja":
+    st.session_state["page"] = "Pregled mečeva"
 with st.sidebar:
     st.title("ScoreGuard")
     st.caption("Streamlit · Operaterski panel")
@@ -108,7 +109,6 @@ with st.sidebar:
         "Radni prostor",
         [
             "Pregled mečeva",
-            "Zajednička neslaganja",
             "Uvoz mečeva",
             "Chrome uvoz",
             "Poveži nazive klubova",
@@ -256,18 +256,7 @@ def monitor_page():
         st.info("Još nema unetih mečeva. Otvorite „Uvoz mečeva“ u levom meniju.")
         return
     view = data.get("view") or {"counts": {}, "matches": []}
-    counts = view["counts"]
     render_sound(view["matches"])
-    for column, (key, label) in zip(
-        st.columns(4),
-        [
-            ("all", "Ukupno mečeva"),
-            ("mismatch", "Neslaganja"),
-            ("match", "Usaglašeno"),
-            ("unverified", "Nije provereno"),
-        ],
-    ):
-        column.metric(label, counts.get(key, 0))
     left, right = st.columns([3, 1])
     with left:
         last = snapshot.get("lastResult") or {}
@@ -346,7 +335,7 @@ def monitor_page():
     else:
         st.info("Nema mečeva za izabrane filtere.")
     st.caption(
-        "Rezultat (poluvreme) · Source = interni spisak. Crveni uokvireni brojevi: konkretno odstupanje. Zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci. Razlog je u detaljima."
+        "Rezultat (poluvreme) · Interno = interni spisak. Crveni uokvireni brojevi na Flashscore-u i Futbol24: konkretno odstupanje. Zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci. Razlog je u detaljima."
     )
 
 
@@ -548,15 +537,6 @@ with st.sidebar:
 
 if page == "Pregled mečeva":
     monitor_page()
-elif page == "Zajednička neslaganja":
-
-    @st.fragment(run_every="15s")
-    def shared_cases_page():
-        if st.session_state.get("operation_notice"):
-            st.success(st.session_state.pop("operation_notice"))
-        render_cases(client(), handle_error)
-
-    shared_cases_page()
 elif page == "Uvoz mečeva":
     import_page()
 elif page == "Chrome uvoz":

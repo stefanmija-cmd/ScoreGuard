@@ -132,7 +132,7 @@ def render_timeline(api, match_id, handle_error):
     for event in events:
         row = {
             "Vreme": local_time(event.get("at"), True),
-            "Source": combined_score(
+            "Interno": combined_score(
                 event.get("internal", {}).get("score"), event.get("internal", {}).get("ht")
             ),
             "Provera": STATUS_NAMES.get(event.get("comparisonStatus"), "Nije provereno"),

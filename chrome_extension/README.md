@@ -50,3 +50,9 @@ Posle ažuriranja GitHub aplikacije ponovo preuzmi dodatak sa stranice **Chrome 
 Ova verzija razlikuje ugnježdene kopije iste tabele od različitih spiskova, podržava uobičajene grid redove, učitane okvire sa istog porekla i otvorene shadow komponente. Ne spaja dve različite liste niti bira jednu od dve liste sa različitim rezultatima.
 
 Ako čitanje ne uspe, otvori **Detalji čitanja** i kopiraj prikazani tekst. Tu su samo broj dokumenata, tabela, gridova, fudbalskih redova i okvira. Nazivi timova, rezultati, korisnički nalozi i ostatak stranice nisu deo tog pregleda. Taj tekst i konkretna poruka greške omogućavaju prilagođavanje stvarnoj strukturi Backoffice-a bez pristupa nalogu.
+
+## Ažuriranje na 0.1.2
+
+Ponovo preuzmi dodatak iz aplikacije ili novog GitHub ZIP-a, zameni fajlove u postojećoj fascikli i klikni Reload na `chrome://extensions`. U prozoru treba da piše **v0.1.2**. Ponovo poveži otvorene Backoffice i ScoreGuard tabove i klikni **Pročitaj sada**.
+
+Pretraga sada prvo obrađuje grid i ne zaustavlja se posle 20 drugih komponenti. Podržano je čitanje teksta ćelija kroz slotove web komponenti. U **Detaljima čitanja** dokumenti i **Shadow delovi** broje se odvojeno; vidi se i broj ćelija pročitanih kroz slotove. Ako je pretraga ograničena, spisak se ne prenosi delimično. Izbor tačnog selektora grida pretražuje samo taj deo stranice. Dijagnostika i dalje sadrži samo brojeve elemenata.

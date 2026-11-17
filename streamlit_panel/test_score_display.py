@@ -37,15 +37,15 @@ class ScoreDisplayTests(unittest.TestCase):
 
     def test_only_away_score_values_differ_in_the_requested_example(self):
         table = self.table()
-        self.assertEqual(table.frame().iloc[0]["Source"], "2:0 (1:0)")
+        self.assertEqual(table.frame().iloc[0]["Interno"], "2:0 (1:0)")
         self.assertEqual(table.frame().iloc[0]["Flashscore"], "2:1 (1:0)")
         self.assertEqual(
             self.differences(table),
-            [("Source", "score-away", "0"), ("Flashscore", "score-away", "1")],
+            [("Flashscore", "score-away", "1")],
         )
         self.assertFalse(
             {
-                "Interno",
+                "Source",
                 "Poluvreme",
                 "Flashscore · poluvreme",
                 "Razlog",
@@ -58,7 +58,7 @@ class ScoreDisplayTests(unittest.TestCase):
         self.match["refs"]["flash"].update(score="2:0", ht="0:0")
         self.assertEqual(
             self.differences(self.table()),
-            [("Source", "ht-home", "1"), ("Flashscore", "ht-home", "0")],
+            [("Flashscore", "ht-home", "0")],
         )
 
     def test_each_source_is_compared_to_source_and_only_selected_sources_contribute(self):
@@ -66,8 +66,6 @@ class ScoreDisplayTests(unittest.TestCase):
         self.assertEqual(
             self.differences(self.table(["flash", "f24"])),
             [
-                ("Source", "score-home", "2"),
-                ("Source", "score-away", "0"),
                 ("Flashscore", "score-away", "1"),
                 ("Futbol24", "score-home", "3"),
             ],
@@ -76,8 +74,18 @@ class ScoreDisplayTests(unittest.TestCase):
         self.assertEqual(self.table().differences, [])
         self.assertEqual(
             self.differences(self.table(["flash", "f24"])),
-            [("Source", "score-home", "2"), ("Futbol24", "score-home", "3")],
+            [("Futbol24", "score-home", "3")],
         )
+
+    def test_only_flashscore_and_futbol24_values_are_marked_when_three_sources_disagree(self):
+        self.match["refs"]["f24"] = {**self.match["refs"]["flash"], "score": "3:0"}
+        self.match["refs"]["api"] = {**self.match["refs"]["flash"], "score": "5:4", "ht": "0:0"}
+        table = self.table(["flash", "f24", "api"])
+        self.assertEqual(
+            self.differences(table),
+            [("Flashscore", "score-away", "1"), ("Futbol24", "score-home", "3")],
+        )
+        self.assertEqual(table.frame().iloc[0]["API-Football"], "5:4 (0:0)")
 
     def test_stale_unverified_missing_and_future_references_never_create_red_values(self):
         original = copy.deepcopy(self.match["refs"]["flash"])
@@ -100,12 +108,12 @@ class ScoreDisplayTests(unittest.TestCase):
     def test_missing_scores_are_not_zero_and_first_half_has_no_final_halftime(self):
         self.match.update(score="0:0", ht=None)
         self.match["refs"]["flash"].update(score="0:0", ht="0:0")
-        self.assertEqual(self.table().frame().iloc[0]["Source"], "0:0 (—)")
+        self.assertEqual(self.table().frame().iloc[0]["Interno"], "0:0 (—)")
         self.assertEqual(self.table().differences, [])
         self.match.update(ht="0:0", expectedStatus="first_half")
         self.match["refs"]["flash"].update(phase="first_half", htRequired=False)
         table = self.table()
-        self.assertEqual(table.frame().iloc[0]["Source"], "0:0 (—)")
+        self.assertEqual(table.frame().iloc[0]["Interno"], "0:0 (—)")
         self.assertEqual(table.frame().iloc[0]["Flashscore"], "0:0 (—)")
         self.assertEqual(table.differences, [])
 
@@ -137,7 +145,7 @@ class ScoreDisplayTests(unittest.TestCase):
 
     def test_plain_table_rows_keep_combined_scores_for_export(self):
         row = table_rows([self.match], ["flash"])[0]
-        self.assertEqual(row["Source"], "2:0 (1:0)")
+        self.assertEqual(row["Interno"], "2:0 (1:0)")
         self.assertEqual(row["Flashscore"], "2:1 (1:0)")
 
     def test_streamlit_renders_same_precise_difference_in_table_and_details(self):
@@ -158,7 +166,7 @@ class ScoreDisplayTests(unittest.TestCase):
         self.assertFalse(app.exception)
         self.assertEqual(
             self.differences(ScoreTableParser(rendered_table(app))),
-            [("Source", "score-away", "0"), ("Flashscore", "score-away", "1")],
+            [("Flashscore", "score-away", "1")],
         )
         details = [
             item.proto.body
@@ -166,9 +174,8 @@ class ScoreDisplayTests(unittest.TestCase):
             if 'class="sg-score-line"' in item.proto.body
         ]
         self.assertEqual(len(details), 2)
-        self.assertIn(
-            'data-part="score-away" title="Neslaganje: rezultat gosta">0</strong>', details[0]
-        )
+        self.assertNotIn('class="sg-score-diff"', details[0])
+        self.assertIn("Interno", details[0])
         self.assertIn(
             'data-part="score-away" title="Neslaganje: rezultat gosta">1</strong>', details[1]
         )

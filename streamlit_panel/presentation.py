@@ -85,7 +85,7 @@ def score_markup(
     baseline = score_values(match)
     values = score_values(match, source)
     trusted = [key for key in sources if reference_fresh(refs.get(key) or {}, now)]
-    comparable = trusted if source is None else [source] if source in trusted else []
+    comparable = [source] if source in ("flash", "f24") and source in trusted else []
 
     def pair(value, part):
         parsed = re.fullmatch(r"(\d{1,2}):(\d{1,2})", value or "", flags=re.ASCII)
@@ -136,7 +136,7 @@ def score_markup(
 
 
 def score_line(match: dict, sources: list[str], source: str | None = None) -> str:
-    label = SOURCE_NAMES.get(source, source) if source else "Source"
+    label = SOURCE_NAMES.get(source, source) if source else "Interno"
     return (
         SCORE_STYLES
         + '<div class="sg-score-line"><b>'
@@ -152,7 +152,6 @@ SCORE_STYLES = """<style>
 .sg-table {border-collapse:separate; border-spacing:0; width:100%; font-size:14px; color:#1d3228;}
 .sg-table th {position:sticky; top:0; z-index:1; background:#f7f9fa; text-align:left;}
 .sg-table th,.sg-table td {padding:10px 12px; border-bottom:1px solid #e0e7e0; vertical-align:middle;}
-.sg-table tr[data-status="mismatch"] td {background:#fff0ec;}
 .sg-table tr[data-status="match"] td {background:#eef7ed;}
 .sg-table tr[data-status="unverified"] td {background:#fff9e9;}
 .sg-score {white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:600;}
@@ -177,12 +176,12 @@ def score_table_html(
         columns = [
             "Datum",
             "Utakmica",
-            "Source",
+            "Interno",
             *[SOURCE_NAMES[key] for key in sources],
             "Provera",
             "Spiskova",
         ]
-    score_columns = {"Source": None, **{SOURCE_NAMES[key]: key for key in sources}}
+    score_columns = {"Interno": None, **{SOURCE_NAMES[key]: key for key in sources}}
     now = datetime.now(timezone.utc)
     body = []
     for index, (match, row) in enumerate(zip(matches, rows)):
@@ -221,7 +220,7 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
             "Šifra": match.get("internalId", "—"),
             "Utakmica": match.get("match", "—"),
             "Takmičenje": match.get("league", "—"),
-            "Source": combined_score(*score_values(match)),
+            "Interno": combined_score(*score_values(match)),
         }
         for source in sources:
             row[SOURCE_NAMES[source]] = reference_score(refs.get(source))

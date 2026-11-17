@@ -45,9 +45,9 @@ Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i pošt
 
 ## 4. Šta znače statusi
 
-Kolona **Source** prikazuje rezultat iz kopiranog internog spiska. Source i svaki izabrani izvor prikazuju **rezultat (poluvreme)**, npr. **2:1 (1:0)**. U prvom poluvremenu ili kada podatak nedostaje prikazuje se **—**; to nije rezultat 0:0.
+Kolona **Interno** prikazuje rezultat iz kopiranog internog spiska. Interno i svaki izabrani izvor prikazuju **rezultat (poluvreme)**, npr. **2:1 (1:0)**. U prvom poluvremenu ili kada podatak nedostaje prikazuje se **—**; to nije rezultat 0:0.
 
-**Crveni uokvireni broj** pokazuje baš ono što se razlikuje: rezultat domaćina, gosta ili odgovarajući broj u zagradi. Na primer, za Source 2:0 i Flashscore 2:1 označeni su gostujući 0 i 1, dok domaćih 2 ostaje bez oznake. Ako se razlikuje samo poluvreme, označavaju se samo brojevi u zagradi. Poređenje koristi samo izabrane, pouzdane i sveže podatke. Ako se razlikuje period utakmice, razlog je u detaljima, bez označavanja jednakih brojeva.
+**Crveni uokvireni broj na Flashscore-u ili Futbol24** pokazuje baš ono što se razlikuje: rezultat domaćina, gosta ili odgovarajući broj u zagradi. Na primer, za Interno 2:0 i Flashscore 2:1 označen je samo gostujući 1 na Flashscore-u; interni rezultat i domaćih 2 ostaju bez oznake. Ako se razlikuje samo poluvreme, označavaju se samo brojevi u zagradi. Poređenje koristi samo izabrane, pouzdane i sveže podatke. Ako se razlikuje period utakmice, razlog je u detaljima, bez označavanja jednakih brojeva.
 
 Oznaka pokazuje neslaganje koje treba proveriti, ne potvrđuje grešku internog sistema. Posebno proveri starost kopiranog internog spiska i vreme preuzimanja izvora.
 
@@ -97,13 +97,9 @@ Poznate skraćenice, poput **Utd / United**, i jednoznačni parovi sa najmanje *
 
 Kod slabijih ili bliskih poklapanja otvori detalje i pogledaj **Predloge povezivanja**. Izaberi meč, proveri oba kluba i selekcije, pa klikni **Potvrdi ovaj par timova**. Aplikacija pamti potvrđenu vezu i pokreće proveru. Sam predlog ne potvrđuje rezultat. Različiti uzrasti, ženske i rezervne ekipe čuvaju se odvojeno. Automatski povezan meč i dalje može imati neslaganje ili nedovoljno sveže podatke.
 
-## 9. Zajednički pregled neslaganja
+## 9. Starost internog unosa
 
 Na vrhu pregleda su neslaganja završenih mečeva, zatim live razlike, pa mečevi bez dovoljno podataka. Kolona **Interni unos** pokazuje starost kopiranog spiska; tačno vreme je u detaljima. Stari interni rezultat treba ponovo proveriti u internom programu.
-
-Otvori **Zajednička neslaganja** za pregled mečeva kod svih operatera. Isti meč prikazuje se zajedno kada ga prati više naloga; kolona **Spiskova** pokazuje na koliko spiskova postoji. Pretragom pronađi klub, takmičenje ili šifru i otvori **Detalje zajedničkog meča**.
-
-Pregled prikazuje rezultate poslednjih provera, njihovu starost i razlog statusa. Ranije zabeležen status obrade ne skriva poznato neslaganje rezultata.
 
 ## 10. Zvuk i promene rezultata
 

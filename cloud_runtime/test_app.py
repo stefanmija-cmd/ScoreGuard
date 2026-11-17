@@ -88,7 +88,7 @@ class CloudAppTests(unittest.TestCase):
                 app.sidebar.radio[0].set_value("Pregled mečeva").run()
                 self.assertFalse(app.exception)
                 self.assertEqual(score_table(app).iloc[0]["Utakmica"], "Zamora – Atletico Barinas")
-                self.assertEqual(score_table(app).iloc[0]["Source"], "0:0 (0:0)")
+                self.assertEqual(score_table(app).iloc[0]["Interno"], "0:0 (0:0)")
                 other = AppTest.from_file(path, default_timeout=25)
                 other.secrets["OPERATOR_ACCOUNTS_JSON"] = config
                 other.run()

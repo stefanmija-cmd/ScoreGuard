@@ -2,6 +2,9 @@
 export function captureSnapshot(selector = "", reportErrors = false) {
   const diagnostics = {
     documents: 0,
+    shadowRoots: 0,
+    slottedCells: 0,
+    traversalLimited: false,
     frames: 0,
     inaccessibleFrames: 0,
     tables: 0,
@@ -22,34 +25,81 @@ export function captureSnapshot(selector = "", reportErrors = false) {
     const cellSelector =
       ':scope > td, :scope > [role="gridcell"], :scope > [role="cell"], :scope > .slick-cell, :scope > .ag-cell, :scope > .tabulator-cell, :scope > .dhx_grid-cell';
     const roots = [],
-      seenDocuments = new Set();
-    function visit(documentRoot) {
-      if (!documentRoot || seenDocuments.has(documentRoot) || seenDocuments.size >= 20) return;
-      seenDocuments.add(documentRoot);
-      diagnostics.documents++;
+      seenRoots = new Set(),
+      queuedRoots = new Set(),
+      priority = [],
+      remaining = [];
+    function enqueue(root, kind, urgent = false, scoped = false) {
+      if (!root || queuedRoots.has(root)) return;
+      queuedRoots.add(root);
+      (urgent ? priority : remaining).push({ root, kind, scoped });
+    }
+    enqueue(document, "document", true);
+    while (priority.length || remaining.length) {
+      const { root: documentRoot, kind, scoped } = (priority.length ? priority : remaining).shift();
+      if (seenRoots.has(documentRoot)) continue;
+      if (seenRoots.size >= 2048) {
+        diagnostics.traversalLimited = true;
+        throw Error(
+          "Stranica ima previše DOM delova za potpun pregled. Izaberite selektor tabele; postojeći spisak nije promenjen.",
+        );
+      }
+      seenRoots.add(documentRoot);
+      diagnostics[kind === "shadow" ? "shadowRoots" : "documents"]++;
       let found;
       try {
-        found = documentRoot.querySelectorAll(selector || rootSelector);
+        found = documentRoot.querySelectorAll(scoped ? rootSelector : selector || rootSelector);
       } catch {
         throw Error(
           "Selektor tabele nije ispravan. Ostavite polje prazno ili proverite CSS selektor.",
         );
       }
       roots.push(...found);
+      // Inspect the known grids before unrelated toolbar and input components.
+      for (const grid of found) if (grid.shadowRoot) enqueue(grid.shadowRoot, "shadow", true, true);
       for (const frame of documentRoot.querySelectorAll("iframe, frame")) {
         if (!["IFRAME", "FRAME"].includes(frame.tagName)) continue;
         diagnostics.frames++;
         try {
-          if (frame.contentDocument) visit(frame.contentDocument);
+          if (frame.contentDocument) enqueue(frame.contentDocument, "document", true);
           else diagnostics.inaccessibleFrames++;
         } catch {
           diagnostics.inaccessibleFrames++;
         }
       }
-      for (const element of documentRoot.querySelectorAll("*"))
-        if (element.shadowRoot) visit(element.shadowRoot);
+      const searchScopes = selector && !scoped && found.length ? [...found] : [documentRoot];
+      for (const searchScope of searchScopes)
+        for (const element of searchScope.querySelectorAll("*"))
+          if (element.shadowRoot) enqueue(element.shadowRoot, "shadow", false, true);
     }
-    visit(document);
+    function composedText(node, visited = new Set(), depth = 0) {
+      if (!node || visited.has(node) || depth > 64) return "";
+      visited.add(node);
+      if (
+        ["SCRIPT", "STYLE", "NOSCRIPT", "INPUT", "TEXTAREA"].includes(node.tagName) ||
+        node.hidden
+      )
+        return "";
+      if (node.nodeType === 3) return node.nodeValue || "";
+      if (node.tagName === "SLOT") {
+        const assigned = node.assignedNodes?.({ flatten: true }) || [];
+        if (assigned.length)
+          return [...assigned].map((child) => composedText(child, visited, depth + 1)).join(" ");
+      }
+      if (node.shadowRoot) return composedText(node.shadowRoot, visited, depth + 1);
+      if (node.childNodes?.length)
+        return [...node.childNodes]
+          .map((child) => composedText(child, visited, depth + 1))
+          .join(" ");
+      return node.innerText || node.textContent || "";
+    }
+    function cellText(cell) {
+      if (cell.shadowRoot || cell.querySelectorAll?.("slot").length) {
+        diagnostics.slottedCells++;
+        return composedText(cell);
+      }
+      return cell.innerText || cell.textContent || "";
+    }
     const uniqueRoots = [...new Set(roots)];
     diagnostics.tables = uniqueRoots.filter((root) => root.tagName === "TABLE").length;
     diagnostics.grids = uniqueRoots.length - diagnostics.tables;
@@ -71,9 +121,8 @@ export function captureSnapshot(selector = "", reportErrors = false) {
               Number(a.getAttribute("aria-colindex")) - Number(b.getAttribute("aria-colindex")),
           );
         const fields = cells.map((cell) =>
-          (cell.innerText || "")
-            .replace(/[\t\r\n]+/g, " ")
-            .replace(/\u00a0/g, " ")
+          cellText(cell)
+            .replace(/\s+/g, " ")
             .replace(/[\u200b-\u200d\ufeff]/g, "")
             .trim(),
         );
