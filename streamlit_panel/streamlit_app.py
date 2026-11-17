@@ -13,11 +13,12 @@ from streamlit_panel.presentation import (
     local_time,
     preview_fingerprint,
     preview_rows,
-    row_style,
-    table_rows,
+    score_line,
+    score_table_html,
 )
 from streamlit_panel.team_aliases_ui import render_team_aliases
 from streamlit_panel.layout import page_styles
+from streamlit_panel.chrome_import import render_receiver, render_chrome_import
 from streamlit_panel.operations_ui import (
     alarm_wav,
     render_sound,
@@ -109,6 +110,7 @@ with st.sidebar:
             "Pregled mečeva",
             "Zajednička neslaganja",
             "Uvoz mečeva",
+            "Chrome uvoz",
             "Poveži nazive klubova",
             "Istorija aktivnosti",
             "Podešavanja",
@@ -164,12 +166,7 @@ def render_match_details(matches, sources, snapshot=None, operations_enabled=Fal
                 match.get("comparisonStatus"), st.info
             )
             show_reason(reason)
-        st.write(
-            "**Interni rezultat:** "
-            + (match.get("score") or "—")
-            + " · **Poluvreme:** "
-            + (match.get("ht") or "—")
-        )
+        st.html(score_line(match, sources))
         st.caption(
             "Interna šifra: "
             + str(match.get("internalId", "—"))
@@ -195,14 +192,7 @@ def render_match_details(matches, sources, snapshot=None, operations_enabled=Fal
             )
         for source in sources:
             reference = match.get("refs", {}).get(source) or {}
-            st.write(
-                "**"
-                + SOURCE_NAMES[source]
-                + ":** "
-                + (reference.get("score") or "—")
-                + " · poluvreme "
-                + (reference.get("ht") or "—")
-            )
+            st.html(score_line(match, sources, source))
             st.caption(
                 str(reference.get("phaseLabel") or "Nije provereno")
                 + " · preuzeto "
@@ -350,17 +340,14 @@ def monitor_page():
         + str(len(matches))
         + " za izabrane filtere. Provera obuhvata ceo spisak."
     )
-    rows = table_rows(shown, sources)
-    if rows:
-        st.dataframe(
-            pd.DataFrame(rows).style.apply(row_style, axis=1),
-            hide_index=True,
-            use_container_width=True,
-        )
+    if shown:
+        st.html(score_table_html(shown, sources))
         render_match_details(shown, sources, snapshot, bool(data.get("operations")))
     else:
         st.info("Nema mečeva za izabrane filtere.")
-    st.caption("Crveno: neslaganje · zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci.")
+    st.caption(
+        "Rezultat (poluvreme) · Source = interni spisak. Crveni uokvireni brojevi: konkretno odstupanje. Zeleno: potpuno poklapanje · žuto: nedostaju pouzdani podaci. Razlog je u detaljima."
+    )
 
 
 def import_page():
@@ -369,7 +356,9 @@ def import_page():
     watch = snapshot.get("watch") or {}
     st.title("Uvoz iz internog programa")
     st.write("Kopirajte ceo spisak i nalepite ga ispod. Format prepoznajemo automatski.")
-    st.caption("Do 1.000 utakmica po spisku. Internom programu se ne pristupa automatski.")
+    st.caption(
+        "Do 1.000 utakmica po spisku. Za prenos iz otvorenog Backoffice taba koristite Chrome uvoz."
+    )
     c1, c2 = st.columns(2)
     with c1:
         base_date = st.date_input(
@@ -446,6 +435,7 @@ def import_page():
                         enabled,
                         imported=True,
                     )
+                    st.session_state.pop("chrome_auto_settings", None)
                     st.session_state.pop("preview", None)
                     st.success("Mečevi su sačuvani. Otvorite „Pregled mečeva“ u levom meniju.")
                 except ApiError as error:
@@ -548,6 +538,14 @@ def settings_page():
             )
 
 
+with st.sidebar:
+    st.divider()
+    receive_chrome = st.checkbox("Primaj iz Chrome dodatka", key="chrome_receive")
+    if receive_chrome:
+        render_receiver(client(), identity["id"], handle_error)
+    else:
+        st.session_state.pop("chrome_auto_settings", None)
+
 if page == "Pregled mečeva":
     monitor_page()
 elif page == "Zajednička neslaganja":
@@ -561,6 +559,8 @@ elif page == "Zajednička neslaganja":
     shared_cases_page()
 elif page == "Uvoz mečeva":
     import_page()
+elif page == "Chrome uvoz":
+    render_chrome_import(client(), handle_error)
 elif page == "Poveži nazive klubova":
     render_team_aliases(client(), load_snapshot().get("monitor"), CLOUD_MODE, handle_error)
 elif page == "Istorija aktivnosti":

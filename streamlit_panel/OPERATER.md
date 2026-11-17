@@ -41,9 +41,15 @@ Operateri dele preuzete podatke izvora. Ručni zahtevi u razmaku do **15 sekundi
 
 Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i poštuje tu pauzu. Ponavljanje klika ne uklanja blokadu izvora.
 
-**Interni spisak je kopirani snimak.** Automatski se preuzimaju novi podaci sa izabranih sajtova, dok interni rezultat ostaje onaj koji si poslednji uvezao. Kada se rezultat u internom programu promeni, ponovo kopiraj i uvezi spisak. Na live meču razlika može poticati od ranijeg internog unosa ili kašnjenja izvora.
+**Interni spisak je snimak poslednjeg uvoza.** Novi podaci sa izabranih sajtova preuzimaju se automatski, a interni rezultat se menja novim ručnim uvozom ili potvrđenim Chrome prenosom. Na live meču razlika može poticati od ranijeg internog unosa ili kašnjenja izvora.
 
 ## 4. Šta znače statusi
+
+Kolona **Source** prikazuje rezultat iz kopiranog internog spiska. Source i svaki izabrani izvor prikazuju **rezultat (poluvreme)**, npr. **2:1 (1:0)**. U prvom poluvremenu ili kada podatak nedostaje prikazuje se **—**; to nije rezultat 0:0.
+
+**Crveni uokvireni broj** pokazuje baš ono što se razlikuje: rezultat domaćina, gosta ili odgovarajući broj u zagradi. Na primer, za Source 2:0 i Flashscore 2:1 označeni su gostujući 0 i 1, dok domaćih 2 ostaje bez oznake. Ako se razlikuje samo poluvreme, označavaju se samo brojevi u zagradi. Poređenje koristi samo izabrane, pouzdane i sveže podatke. Ako se razlikuje period utakmice, razlog je u detaljima, bez označavanja jednakih brojeva.
+
+Oznaka pokazuje neslaganje koje treba proveriti, ne potvrđuje grešku internog sistema. Posebno proveri starost kopiranog internog spiska i vreme preuzimanja izvora.
 
 | Status                    | Značenje i postupak                                                                                                                    |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -120,3 +126,13 @@ U izvorima možeš izabrati **Flashscore**, **Futbol24** ili oba. Futbol24 ne za
 Pri prelasku sa prethodnog izvora sačuvani izbor se menja na Futbol24, a prethodna potvrda rezultata se poništava. Pokreni novu proveru. Ranije Sofascore povezivanje naziva nije potvrda naziva na Futbol24: potraži predlog u detaljima ili dodaj povezivanje za Futbol24. Opšta povezivanja za sve izvore nastavljaju da važe. Stara istorija zadržava oznaku izvora iz kog je zaista nastala.
 
 Za običan završen meč porede se rezultat i poluvreme. Za produžetke poredi se izdvojeni rezultat za 90 minuta samo kada je jasno dostupan. Penali se ne dodaju rezultatu. Ako izvor daje samo rezultat penala ili nepoznat period, podatak ostaje neproveren i razlog je u detaljima.
+
+## 13. Prenos preko Chrome dodatka
+
+Na stranici **Chrome uvoz** preuzmi dodatak i prati prikazane korake. Poveži otvoren Backoffice tab i svoj prijavljeni ScoreGuard tab u istom Chrome profilu. U levom meniju uključi **Primaj iz Chrome dodatka**. Proveri datum, šifre i broj prepoznatih mečeva, pa potvrdi prvi uvoz.
+
+Za automatski rad uključi čitanje na pet minuta u dodatku i **Automatski uvozi naredne promene ovog spiska** pri potvrdi u ScoreGuard-u. Dodatak čita već učitanu tabelu: ne osvežava interni program i ne prelistava stranice. Oba taba moraju ostati otvorena. Broj prenetih mečeva proveri u pregledu; nisu obuhvaćeni redovi koje Backoffice još nije učitao.
+
+Promena rezultata istih mečeva može da se uveze automatski. Promena skupa mečeva, timova, datuma ili vremena početka pauzira uvoz do novog pregleda. Za trenutno čitanje klikni **Preuzmi iz Backoffice taba** u levom meniju, pa **Proveri sada** u pregledu rezultata. Provera javnih izvora i čitanje Backoffice-a imaju zasebne rasporede.
+
+Posle odjave prijem treba ponovo uključiti i potvrditi spisak. Opcija **Pauziraj automatski uvoz** zaustavlja zamenu internog spiska; postojeće provere izvora ostaju u stanju koje si izabrao. Isključivanje **Primaj iz Chrome dodatka** takođe zaustavlja automatski uvoz. Loša ili prazna tabela ne briše postojeći spisak.

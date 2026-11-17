@@ -1,0 +1,41 @@
+body {
+  width: 340px;
+  margin: 0;
+  padding: 18px;
+  font: 14px/1.5 system-ui;
+  color: #173d2c;
+  background: #f6faf7;
+}
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+label {
+  display: block;
+  margin: 12px 0 6px;
+}
+input:not([type="checkbox"]) {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #b5cabc;
+  border-radius: 5px;
+}
+button {
+  width: 100%;
+  padding: 9px;
+  margin-top: 9px;
+  border: 1px solid #a2bdae;
+  border-radius: 5px;
+  background: white;
+  color: #174d32;
+  cursor: pointer;
+}
+#status {
+  font-weight: 600;
+  white-space: pre-line;
+}
+p {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

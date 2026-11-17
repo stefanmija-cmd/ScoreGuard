@@ -14,6 +14,9 @@ from streamlit_panel.presentation import (
     STATUS_NAMES,
     input_age,
     local_time,
+    combined_score,
+    score_line,
+    score_table_html,
 )
 
 
@@ -129,14 +132,14 @@ def render_timeline(api, match_id, handle_error):
     for event in events:
         row = {
             "Vreme": local_time(event.get("at"), True),
-            "Interno": event.get("internal", {}).get("score") or "—",
-            "Interno · poluvreme": event.get("internal", {}).get("ht") or "—",
+            "Source": combined_score(
+                event.get("internal", {}).get("score"), event.get("internal", {}).get("ht")
+            ),
             "Provera": STATUS_NAMES.get(event.get("comparisonStatus"), "Nije provereno"),
         }
         for source, ref in event.get("refs", {}).items():
             label = SOURCE_NAMES.get(source, LEGACY_SOURCE_NAMES.get(source, source))
-            row[label] = ref.get("score") or "—"
-            row[label + " · poluvreme"] = ref.get("ht") or "—"
+            row[label] = combined_score(ref.get("score"), ref.get("ht"))
         row["Poreklo"] = (
             "Vraćena rezervna kopija" if event.get("restoredAt") else "Provera aplikacije"
         )
@@ -166,19 +169,25 @@ def render_cases(api, handle_error):
     if not cases:
         st.info("Nema mečeva na ovoj strani. Ako si promenio pretragu, vrati se na prvu stranu.")
         return
-    rows = []
+    matches = []
+    sources = []
     for item in cases:
         evidence = item.get("evidence") or {}
-        rows.append(
+        matches.append(
             {
-                "Datum": evidence.get("date", ""),
-                "Utakmica": evidence.get("match", ""),
-                "Interno": evidence.get("internal", {}).get("score") or "—",
-                "Provera": STATUS_NAMES.get(item["comparisonStatus"], "Nije provereno"),
-                "Spiskova": item.get("operatorCount", 1),
+                **evidence,
+                **(evidence.get("internal") or {}),
+                "comparisonStatus": item["comparisonStatus"],
             }
         )
-    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+        for source in evidence.get("sources", list(evidence.get("refs", {}))):
+            if source in SOURCE_NAMES and source not in sources:
+                sources.append(source)
+    st.html(
+        score_table_html(
+            matches, sources, "sg-shared", [item.get("operatorCount", 1) for item in cases]
+        )
+    )
     render_sound(
         [
             {
@@ -201,20 +210,22 @@ def render_cases(api, handle_error):
         )
         st.write(selected.get("comparisonReason") or "Nema pouzdanih podataka za poređenje.")
         evidence = selected.get("evidence") or {}
+        match = {**evidence, **(evidence.get("internal") or {})}
+        selected_sources = [
+            key
+            for key in evidence.get("sources", list(evidence.get("refs", {})))
+            if key in SOURCE_NAMES
+        ]
+        st.html(score_line(match, selected_sources))
         st.caption(
             "Interni snimak "
             + input_age(evidence.get("importedAt"))
             + " · proveru pokrenuo "
             + str(evidence.get("operator", "—"))
         )
-        for source, ref in evidence.get("refs", {}).items():
-            st.write(
-                SOURCE_NAMES.get(source, source)
-                + ": "
-                + (ref.get("score") or "—")
-                + " · poluvreme "
-                + (ref.get("ht") or "—")
-            )
+        for source in selected_sources:
+            ref = evidence.get("refs", {}).get(source) or {}
+            st.html(score_line(match, selected_sources, source))
             st.caption("Preuzeto " + local_time(ref.get("checkedAt"), True))
 
 

@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
 from streamlit.testing.v1 import AppTest
+from streamlit_panel.ui_test_helpers import score_table
 from cloud_runtime import bootstrap
 from cloud_runtime.test_runtime import test_accounts, PASSWORD
 
@@ -86,9 +87,8 @@ class CloudAppTests(unittest.TestCase):
                 ).click().run()
                 app.sidebar.radio[0].set_value("Pregled mečeva").run()
                 self.assertFalse(app.exception)
-                self.assertEqual(
-                    app.dataframe[0].value.iloc[0]["Utakmica"], "Zamora – Atletico Barinas"
-                )
+                self.assertEqual(score_table(app).iloc[0]["Utakmica"], "Zamora – Atletico Barinas")
+                self.assertEqual(score_table(app).iloc[0]["Source"], "0:0 (0:0)")
                 other = AppTest.from_file(path, default_timeout=25)
                 other.secrets["OPERATOR_ACCOUNTS_JSON"] = config
                 other.run()

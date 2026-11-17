@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="sr-Latn">
+  <head>
+    <meta charset="utf-8" />
+    <title>ScoreGuard uvoz</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>ScoreGuard uvoz</h1>
+    <p>Čita samo prikazanu tabelu. Otvorite Backoffice i ScoreGuard u istom Chrome profilu.</p>
+    <label for="selector">Selektor tabele (ostavite prazno za automatski izbor)</label
+    ><input id="selector" maxlength="300" placeholder="npr. #matches-table" />
+    <button id="source">Ovaj tab je Backoffice</button
+    ><button id="app">Ovaj tab je ScoreGuard</button>
+    <p id="bindings"></p>
+    <label><input id="automatic" type="checkbox" /> Čitaj tabelu na svakih 5 minuta</label>
+    <button id="capture">Pročitaj sada</button><button id="disconnect">Prekini povezivanje</button>
+    <p id="status" role="status"></p>
+    <p>
+      Otvoren je samo već učitan spisak: filteri i paginacija ograničavaju ono što dodatak vidi.
+      Prvi prenos potvrdite u „Chrome uvoz“ u aplikaciji.
+    </p>
+    <script type="module" src="popup.mjs"></script>
+  </body>
+</html>

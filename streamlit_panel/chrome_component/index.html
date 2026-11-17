@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="sr-Latn">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font: 13px/1.4 system-ui;
+        color: #193e2b;
+        margin: 3px;
+      }
+      button {
+        padding: 7px 10px;
+        border: 1px solid #a8c7b4;
+        border-radius: 5px;
+        background: #f5faf6;
+        cursor: pointer;
+      }
+      p {
+        margin: 5px 0;
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="refresh">Preuzmi iz Backoffice taba</button>
+    <p id="status" role="status">Čekam Chrome dodatak…</p>
+    <script src="bridge.js"></script>
+  </body>
+</html>

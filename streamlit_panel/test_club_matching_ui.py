@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
+from streamlit_panel.ui_test_helpers import score_table
 
 
 class FakeApi:
@@ -77,8 +78,8 @@ class ClubMatchUITest(unittest.TestCase):
                 for caption in app.caption
             )
         )
-        self.assertNotIn("Razlog", app.dataframe[0].value.columns)
-        self.assertEqual(app.dataframe[0].value.iloc[0]["Provera"], "Usaglašeno")
+        self.assertNotIn("Razlog", score_table(app).columns)
+        self.assertEqual(score_table(app).iloc[0]["Provera"], "Usaglašeno")
 
     def test_details_show_source_clubs_and_competition_without_requiring_equal_labels(self):
         path = str(Path(__file__).with_name("streamlit_app.py"))
@@ -94,7 +95,7 @@ class ClubMatchUITest(unittest.TestCase):
                 for caption in app.caption
             )
         )
-        self.assertEqual(app.dataframe[0].value.iloc[0]["Provera"], "Usaglašeno")
+        self.assertEqual(score_table(app).iloc[0]["Provera"], "Usaglašeno")
 
     def test_finished_examples_keep_the_reason_in_details_only(self):
         reason = "Rezultat i poluvreme se poklapaju sa svim izabranim izvorima. Flashscore: Završeno. Interna oznaka „FT / 2nd half“ može ostati i posle završetka utakmice."
@@ -127,7 +128,7 @@ class ClubMatchUITest(unittest.TestCase):
             app.session_state["user"] = {"id": "operator-test"}
             app.run()
             self.assertFalse(app.exception)
-            frame = app.dataframe[0].value
+            frame = score_table(app)
             self.assertEqual(frame["Provera"].tolist(), ["Usaglašeno", "Usaglašeno"])
             self.assertNotIn("Razlog", frame.columns)
             self.assertTrue(any(reason == message.value for message in app.success))
@@ -137,7 +138,7 @@ class ClubMatchUITest(unittest.TestCase):
             )
             app.run()
             self.assertFalse(app.exception)
-            self.assertEqual(app.dataframe[0].value.iloc[0]["Provera"], "Neslaganje")
+            self.assertEqual(score_table(app).iloc[0]["Provera"], "Neslaganje")
             self.assertTrue(
                 any(
                     "Poluvreme: interno 0:0, Flashscore 0:1." == message.value

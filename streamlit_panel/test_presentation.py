@@ -42,7 +42,7 @@ class PresentationTests(unittest.TestCase):
             ],
             ["flash"],
         )
-        self.assertEqual(rows[0]["Interno"], "—")
+        self.assertEqual(rows[0]["Source"], "— (—)")
         self.assertIn("zastarelo", rows[0]["Flashscore"])
         self.assertEqual(rows[0]["Provera"], "Nije provereno")
 

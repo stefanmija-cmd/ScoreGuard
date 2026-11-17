@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
+from streamlit_panel.ui_test_helpers import score_table
 from streamlit_panel.presentation import SOURCE_NAMES
 
 
@@ -73,9 +74,10 @@ class Futbol24UITests(unittest.TestCase):
             app.session_state["user"] = {"id": "operator-test"}
             app.run()
             self.assertFalse(app.exception)
-            columns = app.dataframe[0].value.columns
+            columns = score_table(app).columns
             self.assertIn("Futbol24", columns)
-            self.assertIn("Futbol24 · poluvreme", columns)
+            self.assertNotIn("Futbol24 · poluvreme", columns)
+            self.assertEqual(score_table(app).iloc[0]["Futbol24"], "6:0 (3:0)")
             self.assertNotIn("Sofascore", columns)
             self.assertNotIn("Razlog", columns)
             self.assertTrue(

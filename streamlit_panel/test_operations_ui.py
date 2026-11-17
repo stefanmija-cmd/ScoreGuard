@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
+from streamlit_panel.ui_test_helpers import score_table, ScoreTableParser, rendered_table
 from streamlit_panel.operations_ui import detect_alerts
 from streamlit_panel.presentation import input_age
 
@@ -178,7 +179,7 @@ class OperationsUITests(unittest.TestCase):
                 )
                 app.run()
                 self.assertFalse(app.exception)
-                frame = app.dataframe[0].value
+                frame = score_table(app)
                 self.assertTrue(
                     {"Prioritet", "Obrada", "Operater", "Razlog"}.isdisjoint(frame.columns)
                 )
@@ -221,10 +222,19 @@ class OperationsUITests(unittest.TestCase):
             FakeApi.workflow["workStatus"] = "resolved"
             app.sidebar.radio[0].set_value("Zajednička neslaganja").run()
             self.assertFalse(app.exception)
-            self.assertEqual(app.dataframe[0].value.iloc[0]["Spiskova"], 2)
-            self.assertEqual(app.dataframe[0].value.iloc[0]["Provera"], "Neslaganje")
+            self.assertEqual(score_table(app, "sg-shared").iloc[0]["Spiskova"], 2)
+            self.assertEqual(score_table(app, "sg-shared").iloc[0]["Provera"], "Neslaganje")
+            self.assertEqual(
+                [
+                    (part["column"], part["part"], part["value"])
+                    for part in ScoreTableParser(rendered_table(app, "sg-shared")).differences
+                ],
+                [("Source", "score-home", "1"), ("Flashscore", "score-home", "2")],
+            )
             self.assertTrue(
-                {"Prioritet", "Obrada", "Operater"}.isdisjoint(app.dataframe[0].value.columns)
+                {"Prioritet", "Obrada", "Operater"}.isdisjoint(
+                    score_table(app, "sg-shared").columns
+                )
             )
             self.assertEqual(FakeApi.case_requests[-1], (0, True, "", ""))
             self.assertEqual(FakeApi.calls, [])

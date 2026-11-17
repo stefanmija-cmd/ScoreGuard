@@ -204,3 +204,7 @@ Običan FT rezultat i poluvreme čitaju se odvojeno. Futbol24 AET zapis sa dva p
 Cloud paket sada uključuje razvojne formatere i testove. Uputstvo i komande su u [DEVELOPMENT.md](DEVELOPMENT.md). Operaterima nije potrebna instalacija tih alata niti promena naloga.
 
 Obaveštenje o Cloud režimu ima veći razmak ispod Streamlit zaglavlja i na mobilnom prikazu. Potvrđene veze naziva imaju prednost nad heuristikom selekcije; oznaka F u nazivu kluba ne određuje pol. Zahtevi panela i servisni requestTimeout podešeni su na 90 sekundi, uz isti petominutni raspored.
+
+## Chrome dodatak za Backoffice uvoz
+
+Posle objavljivanja cele nove verzije prijavite se i otvorite **Chrome uvoz**. Tamo se preuzima dodatak i prikazuju koraci za povezivanje otvorenog Backoffice taba sa prijavljenim ScoreGuard panelom. [Detaljno uputstvo](chrome_extension/README.md). Dodatni server, pristupne lozinke u dodatku i javno otvaranje lokalnog API-ja nisu potrebni.
