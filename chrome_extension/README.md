@@ -1,5 +1,7 @@
 # ScoreGuard Chrome dodatak — početni test
 
+Aktuelna verzija je **0.1.5**. Kolona **Score 2** je rezultat poluvremena, a odvojene **Home / Away** kolone uz FT/HT su trenutni rezultat.
+
 Dodatak čita samo već učitane fudbalske redove iz izabranog Backoffice taba. Ne poziva Backoffice API, ne osvežava stranicu, ne klikće po njoj i ne prelistava stranice. Čitanje DOM tabele ima mali lokalni trošak u pregledaču; ne stvara dodatne HTTP zahteve internom sistemu.
 
 ## Postavljanje
@@ -82,3 +84,11 @@ Dodatak prikazuje **Poslednji pokušaj**, **Poslednje čitanje** i **Sledeće č
 Vaadin i slični gridovi mogu zadržati ćelije u drugom HTML redosledu iako su kolone na ekranu iste. Čitanje sada koristi njihov prikazani CSS redosled, zatim potpune ARIA indekse ili uobičajeni HTML redosled. Skriveni pomoćni stupci se izostavljaju. Tekst iz slotova čuva cifre šifre, rezultata i vremena, a prazne kolone rezultata ostaju prazne. Jedan neispravan fudbalski red zaustavlja prenos cele tabele.
 
 **Detalji čitanja** pokazuju broj kolona, način sortiranja i brojeve redova sa neispravnom šifrom, vremenom ili nedostajućim nazivima. To su samo brojevi, bez sadržaja spiska. Ako se greška ponovi, taj pregled pokazuje koji deo čitanja zahteva dodatno prilagođavanje. Stvarna Backoffice stranica nije dostupna razvojnom testu; proverene su kontrolisane grid tabele sa istim brojem od 17 fudbalskih redova.
+
+## Ažuriranje na 0.1.5 — poluvreme iz Score 2
+
+Preuzmi novi dodatak kroz **Chrome uvoz**, zameni fajlove postojeće fascikle, klikni **Reload** na `chrome://extensions` i proveri oznaku **v0.1.5**. Posle ažuriranja aplikacije koristi **Manage app → Reboot app**, ponovo poveži oba taba i potvrdi nov spisak sa automatskim uvozom.
+
+Poluvreme se čita iz zaglavlja **Score 2 / Score2**. Podržano je i kada su dva broja zasebni elementi, a dvotačku prikazuje CSS. Trenutni rezultat ostaje iz dve kolone **Home / Away**. Primeri prikaza su **0:6 (0:5)** i **2:1 (2:0)**. Oznaka **Pause** prepoznaje se kao pauza na poluvremenu.
+
+Status dodatka prikazuje koliko je poluvremena pročitano, prazno ili neprepoznato. Prazno ili nejasno polje ne pretvara se u 0:0, a sam zapis bez separatora i bez dva odvojena broja ne nagađa se. Ako je poluvreme već 0:0, nule ostaju sačuvane. U prvom poluvremenu rezultat na poluvremenu još se ne potvrđuje. Minute golova se i dalje samo beleže.

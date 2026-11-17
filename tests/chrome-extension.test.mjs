@@ -660,6 +660,174 @@ test("extension version, relay and Streamlit component cache identifiers are rel
   assert.ok(component.includes("scoreguard_chrome_receiver_v" + suffix));
 });
 
+test("Score 2 header imports all thirteen supplied halftime examples from split rendered scores", () => {
+  const samples = [
+    ["2:1", "2:1", "Pause", ""],
+    ["2:1", "2:0", "2nd half", "74'"],
+    ["1:2", "1:2", "2nd half", "37'"],
+    ["1:0", "1:0", "2nd half", "19'"],
+    ["0:1", "0:1", "2nd half", "32'"],
+    ["0:2", "0:2", "2nd half", "28'"],
+    ["0:6", "0:5", "2nd half", "46'"],
+    ["1:1", "1:1", "2nd half", "45'"],
+    ["0:0", "0:0", "2nd half", ""],
+    ["0:0", "0:0", "2nd half", ""],
+    ["1:2", "1:2", "Pause", "32'"],
+    ["1:4", "1:4", "Pause", "43'"],
+    ["0:1", "0:1", "Pause", "41'"],
+  ];
+  const labels = [
+    "Sport",
+    "League",
+    "Code",
+    "Home",
+    "Away",
+    "Time",
+    "Score",
+    "Home",
+    "Away",
+    "",
+    "",
+    "Score 2",
+    "Min",
+    "Phase",
+    ...Array(8).fill(""),
+  ];
+  const header = cellGrid(
+    labels.map((label, index) => slottedCell(label, index, { tagName: "TH" })),
+  ).querySelectorAll()[0];
+  const rows = samples.map(([current, halftime, phase, minute], index) => {
+    const values = [
+      ...fields.slice(0, 9),
+      "private-auxiliary",
+      "",
+      halftime,
+      minute,
+      phase,
+      ...Array(8).fill(""),
+    ];
+    values[2] = String(72499 + index);
+    [values[7], values[8]] = current.split(":");
+    const cells = values.map((value, column) => slottedCell(value, column));
+    const parts = halftime
+      .split(":")
+      .map((text) => ({ tagName: "SPAN", childNodes: [{ nodeType: 3, nodeValue: text }] }));
+    parts.splice(1, 0, { tagName: "SPAN", childNodes: [] }); // CSS paints the colon.
+    cells[11] = slottedCell(parts, 11, { innerText: halftime.replace(":", "") });
+    return cellGrid([...cells].reverse()).querySelectorAll()[0];
+  });
+  const result = capture([{ tagName: "TABLE", querySelectorAll: () => [header, ...rows] }]);
+  assert.equal(result.count, 13);
+  assert.equal(result.diagnostics.halftimeRead, 13);
+  assert.equal(result.diagnostics.halftimeUnreadable, 0);
+  assert.equal(result.diagnostics.score2Headers, 1);
+  assert.doesNotMatch(result.text, /private-auxiliary/);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  for (const [index, [current, halftime, phase, minute]] of samples.entries()) {
+    assert.equal(imported.rows[index].score, current);
+    assert.equal(imported.rows[index].ht, halftime);
+    assert.equal(
+      imported.rows[index].expectedStatus,
+      phase === "Pause" ? "half_time" : "second_half",
+    );
+    assert.equal(imported.rows[index].native.minute, minute);
+  }
+});
+
+test("Score 2 supports explicit separators and two spaced values without changing current scores", () => {
+  for (const [text, halftime] of [
+    ["2:0", "2:0"],
+    ["2 0", "2:0"],
+    ["2\n0", "2:0"],
+    ["2∶0", "2:0"],
+    ["2：0", "2:0"],
+    ["0:0", "0:0"],
+    ["10 - 5", "10:5"],
+  ]) {
+    const values = [...fields];
+    values[7] = "12";
+    values[8] = "12";
+    values[9] = text;
+    const result = capture([table([values])]);
+    const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+      baseDate: "2026-11-11",
+    });
+    assert.deepEqual(imported.errors, []);
+    assert.equal(imported.rows[0].score, "12:12");
+    assert.equal(imported.rows[0].ht, halftime);
+  }
+});
+
+test("empty Score 2 cannot take a score from Min or another neighboring column", () => {
+  const values = [...fields];
+  values[9] = "";
+  values[10] = "1:1";
+  const result = capture([table([values])]);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  assert.equal(imported.rows[0].ht, null);
+  assert.equal(result.diagnostics.halftimeMissing, 1);
+});
+
+test("unseparated Score 2 digits are not guessed and controls are never read as score values", () => {
+  const cells = fields.map((value, index) => slottedCell(value, index));
+  cells[9] = slottedCell("05", 9);
+  let result = capture([cellGrid(cells)]);
+  assert.equal(parseNativeClipboard(result.text).rows[0].colonScore, null);
+  assert.equal(result.diagnostics.halftimeUnreadable, 1);
+  const span = (value) => ({ tagName: "SPAN", childNodes: [{ nodeType: 3, nodeValue: value }] });
+  const input = {
+    tagName: "INPUT",
+    textContent: "private-value",
+    get value() {
+      throw Error("input value accessed");
+    },
+  };
+  cells[9] = slottedCell([span("0"), input, span("5")], 9, { innerText: "05" });
+  result = capture([cellGrid(cells)]);
+  assert.equal(parseNativeClipboard(result.text).rows[0].colonScore, "0:5");
+  assert.doesNotMatch(result.text, /private-value/);
+});
+
+test("default header CSS order cannot point Score 2 at the sport column of a flex body", () => {
+  const labels = fields.map((_, index) => (index === 9 ? "Score 2" : ""));
+  const header = cellGrid(
+    labels.map((label) => slottedCell(label, 0, { tagName: "TH" })),
+    "table-row",
+  ).querySelectorAll()[0];
+  const values = [...fields];
+  values[7] = "2";
+  values[8] = "1";
+  values[9] = "2:0";
+  const body = cellGrid(
+    values.map((value, index) => slottedCell(value, index)),
+  ).querySelectorAll()[0];
+  const result = capture([{ tagName: "TABLE", querySelectorAll: () => [header, body] }]);
+  assert.equal(parseNativeClipboard(result.text).rows[0].colonScore, "2:0");
+  assert.equal(result.diagnostics.halftimeRead, 1);
+});
+
+test("conflicting Score 2 headers leave halftime unknown instead of selecting a different column", () => {
+  const labels = fields.map((_, index) => ([9, 10].includes(index) ? "Score 2" : ""));
+  const header = cellGrid(
+    labels.map((label, index) => slottedCell(label, index, { tagName: "TH" })),
+  ).querySelectorAll()[0];
+  const values = [...fields];
+  values[9] = "0:0";
+  values[10] = "0:1";
+  const body = cellGrid(
+    values.map((value, index) => slottedCell(value, index)),
+  ).querySelectorAll()[0];
+  const result = capture([{ tagName: "TABLE", querySelectorAll: () => [header, body] }]);
+  assert.equal(parseNativeClipboard(result.text).rows[0].colonScore, null);
+  assert.equal(result.diagnostics.halftimeUnreadable, 1);
+});
+
 test("opening status restores a missing alarm without postponing an existing deadline", async (t) => {
   let now = Date.now();
   t.mock.method(Date, "now", () => now);

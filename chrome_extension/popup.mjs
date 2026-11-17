@@ -31,12 +31,20 @@ async function show() {
       (state.status.automatic && state.status.nextReadAt
         ? new Date(state.status.nextReadAt).toLocaleTimeString("sr-Latn-RS")
         : "ručni režim");
+  if (state.diagnostics && !state.error)
+    $("status").textContent +=
+      "\nScore 2 · poluvreme pročitano: " +
+      (state.diagnostics.halftimeRead || 0) +
+      ", prazno: " +
+      (state.diagnostics.halftimeMissing || 0) +
+      ", neprepoznato: " +
+      (state.diagnostics.halftimeUnreadable || 0);
 
   $("reading-details").hidden = !state.diagnostics;
   if (state.diagnostics) {
     const d = state.diagnostics;
     $("diagnostics").textContent =
-      "Verzija: 0.1.4\nDokumenti: " +
+      "Verzija: 0.1.5\nDokumenti: " +
       d.documents +
       "\nShadow delovi: " +
       (d.shadowRoots || 0) +
@@ -66,6 +74,14 @@ async function show() {
       (d.invalidTime || 0) +
       "\nNedostaju liga / timovi: " +
       (d.missingNames || 0) +
+      "\nZaglavlje Score 2: " +
+      (d.score2Headers || 0) +
+      "\nPoluvreme pročitano / prazno / neprepoznato: " +
+      (d.halftimeRead || 0) +
+      " / " +
+      (d.halftimeMissing || 0) +
+      " / " +
+      (d.halftimeUnreadable || 0) +
       "\nKandidati: " +
       d.candidates +
       "\nOkviri: " +

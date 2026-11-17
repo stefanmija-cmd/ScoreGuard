@@ -40,6 +40,7 @@ export function nativePhase(value) {
       "half time": "half_time",
       halftime: "half_time",
       "half-time": "half_time",
+      pause: "half_time",
       finished: "finished",
       "full time": "finished",
       "full-time": "finished",
@@ -161,9 +162,15 @@ export function parseNativeClipboard(text) {
       /^\d{1,2}$/.test(numberHomeRaw) && /^\d{1,2}$/.test(numberAwayRaw)
         ? Number(numberHomeRaw) + ":" + Number(numberAwayRaw)
         : null;
-    const colonScoreRaw =
-      after.slice(0, 4).find((t) => /^\s*\d{0,2}\s*:\s*\d{0,2}\s*$/.test(t)) || "";
-    const colonScore = normalizeScore(colonScoreRaw.replace(/\s/g, ""));
+    const colonScoreRaw = tabular
+      ? after[2] || ""
+      : after.slice(0, 4).find((t) => /^\s*\d{0,2}\s*:\s*\d{0,2}\s*$/.test(t)) || "";
+    const halftimeText = colonScoreRaw.trim().replace(/[\u2236\uff1a]/g, ":");
+    const colonScore = normalizeScore(
+      tabular && /^\d{1,2}\s+\d{1,2}$/.test(halftimeText)
+        ? halftimeText.replace(/\s+/, ":")
+        : halftimeText.replace(/\s/g, ""),
+    );
     const phaseRaw = after.find((t) => nativePhase(t)) || "",
       phase = nativePhase(phaseRaw);
     const minuteRaw = after.find((t) => /^\d{1,3}(?:\+\d{1,2})?['’′]$/.test(t)) || "";

@@ -19,6 +19,10 @@ export function captureSnapshot(selector = "", reportErrors = false) {
     invalidCode: 0,
     invalidTime: 0,
     missingNames: 0,
+    score2Headers: 0,
+    halftimeRead: 0,
+    halftimeMissing: 0,
+    halftimeUnreadable: 0,
   };
   try {
     if (
@@ -31,7 +35,7 @@ export function captureSnapshot(selector = "", reportErrors = false) {
       'table, [role="grid"], [role="treegrid"], .grid-canvas, .slick-viewport, .ag-root, .k-grid-content, .tabulator-table, .dhx_grid-body, vaadin-grid';
     const rowSelector = 'tr, [role="row"], .slick-row, .ag-row, .tabulator-row, .dhx_grid-row';
     const cellSelector =
-      ':scope > td, :scope > [role="gridcell"], :scope > [role="cell"], :scope > .slick-cell, :scope > .ag-cell, :scope > .tabulator-cell, :scope > .dhx_grid-cell';
+      ':scope > td, :scope > th, :scope > [role="columnheader"], :scope > [role="gridcell"], :scope > [role="cell"], :scope > .slick-cell, :scope > .ag-cell, :scope > .tabulator-cell, :scope > .dhx_grid-cell';
     const roots = [],
       seenRoots = new Set(),
       queuedRoots = new Set(),
@@ -172,6 +176,109 @@ export function captureSnapshot(selector = "", reportErrors = false) {
           }
         : null;
     }
+    function cleanText(value) {
+      return value
+        .replace(/\s+/g, " ")
+        .replace(/[\u200b-\u200d\ufeff]/g, "")
+        .trim();
+    }
+    function isHeader(row, cells) {
+      return (
+        Boolean(row.closest?.("thead")) ||
+        cells.some(
+          (cell) =>
+            cell.tagName === "TH" ||
+            cell.getAttribute?.("role") === "columnheader" ||
+            (cell.getAttribute?.("part") || "").split(/\s+/).includes("header-cell"),
+        )
+      );
+    }
+    function headerColumn(rows, names) {
+      return rows.flatMap(({ cells, fields, header, row }) => {
+        if (!header) return [];
+        const display = styleOf(row).display,
+          css =
+            (!display || /^(?:inline-)?(?:flex|grid)$/.test(display)) &&
+            new Set(cells.map((cell) => styleOf(cell).order || "0")).size > 1;
+        const indexes = cells.map((cell) => cell.getAttribute?.("aria-colindex") || ""),
+          aria =
+            indexes.every((index) => /^[1-9]\d*$/.test(index)) &&
+            new Set(indexes).size === cells.length;
+        return fields.flatMap((text, index) =>
+          names.includes(text.toLowerCase().replace(/\s/g, ""))
+            ? [
+                {
+                  index,
+                  count: cells.length,
+                  cssOrder: css ? String(styleOf(cells[index]).order || "0") : null,
+                  ariaIndex: aria ? indexes[index] : null,
+                },
+              ]
+            : [],
+        );
+      });
+    }
+    function resolveColumn(cells, headers) {
+      const matches = new Set();
+      for (const column of headers) {
+        const order = column.cssOrder,
+          aria = column.ariaIndex;
+        let found =
+          order !== null
+            ? cells.filter((cell) => String(styleOf(cell).order || "0") === order)
+            : [];
+        if (found.length !== 1 && aria)
+          found = cells.filter((cell) => cell.getAttribute?.("aria-colindex") === aria);
+        if (found.length !== 1 && column.count === cells.length) found = [cells[column.index]];
+        if (found.length === 1) matches.add(found[0]);
+      }
+      return matches.size === 1 ? [...matches][0] : null;
+    }
+    function score2Value(cell) {
+      if (!cell) return { value: "", state: "unreadable" };
+      const raw = cleanText(cellText(cell));
+      const pair =
+        /^(\d{1,2})\s*[:\u2236\uff1a-]\s*(\d{1,2})$/.exec(raw) ||
+        /^(\d{1,2})\s+(\d{1,2})$/.exec(raw);
+      if (pair) return { value: Number(pair[1]) + ":" + Number(pair[2]), state: "read" };
+      // A rendered colon may be CSS content: read the two numeric score elements.
+      const visited = new Set();
+      function groups(node, depth = 0) {
+        if (
+          !node ||
+          visited.has(node) ||
+          depth > 64 ||
+          node.hidden ||
+          ["SCRIPT", "STYLE", "NOSCRIPT", "INPUT", "TEXTAREA"].includes(node.tagName)
+        )
+          return null;
+        visited.add(node);
+        const children =
+          node.tagName === "SLOT"
+            ? node.assignedNodes?.({ flatten: true }) || node.childNodes || []
+            : node.shadowRoot
+              ? [node.shadowRoot]
+              : node.childNodes || [];
+        const parts = [...children]
+          .filter(
+            (child) =>
+              !child.hidden &&
+              !["SCRIPT", "STYLE", "NOSCRIPT", "INPUT", "TEXTAREA"].includes(child.tagName),
+          )
+          .map((child) => ({ node: child, text: cleanText(composedText(child)) }))
+          .filter((part) => part.text && !/^[:\u2236\uff1a-]$/.test(part.text));
+        if (parts.length === 2 && parts.every((part) => /^\d{1,2}$/.test(part.text)))
+          return parts.map((part) => Number(part.text)).join(":");
+        return parts.length === 1 ? groups(parts[0].node, depth + 1) : null;
+      }
+      const value = groups(cell);
+      return value
+        ? { value, state: "read" }
+        : {
+            value: "",
+            state: !raw || /^[-:—–?\s]+$/.test(raw) ? "missing" : "unreadable",
+          };
+    }
     const uniqueRoots = [...new Set(roots)];
     diagnostics.tables = uniqueRoots.filter((root) => root.tagName === "TABLE").length;
     diagnostics.grids = uniqueRoots.length - diagnostics.tables;
@@ -183,16 +290,27 @@ export function captureSnapshot(selector = "", reportErrors = false) {
       let footballRows = 0,
         invalidCode = 0,
         invalidTime = 0,
-        missingNames = 0;
-      for (const row of root.querySelectorAll(rowSelector)) {
-        if (!row.getClientRects().length) continue;
-        const cells = orderedCells(row);
-        const fields = cells.map((cell) =>
-          cellText(cell)
-            .replace(/\s+/g, " ")
-            .replace(/[\u200b-\u200d\ufeff]/g, "")
-            .trim(),
-        );
+        missingNames = 0,
+        halftimeRead = 0,
+        halftimeMissing = 0,
+        halftimeUnreadable = 0;
+      const rows = [...root.querySelectorAll(rowSelector)]
+        .filter((row) => row.getClientRects().length)
+        .map((row) => {
+          const cells = orderedCells(row);
+          return {
+            row,
+            cells,
+            fields: cells.map((cell) => cleanText(cellText(cell))),
+            header: isHeader(row, cells),
+          };
+        });
+      const score2 = headerColumn(rows, ["score2"]),
+        minuteColumn = headerColumn(rows, ["min", "minute", "minut"]),
+        phaseColumn = headerColumn(rows, ["phase", "period"]);
+      if (score2.length) diagnostics.score2Headers++;
+      for (const { cells, fields, header } of rows) {
+        if (header) continue;
         const sportIndex = fields.findIndex(
           (field, index) => index < 3 && /^(?:F|Fudbal)$/i.test(field),
         );
@@ -224,14 +342,29 @@ export function captureSnapshot(selector = "", reportErrors = false) {
           malformed.push(match.length);
           continue;
         }
+        const halftime = score2Value(
+          score2.length ? resolveColumn(cells, score2) : cells[sportIndex + timeIndex + 4],
+        );
+        if (halftime.state === "read") halftimeRead++;
+        else if (halftime.state === "missing") halftimeMissing++;
+        else halftimeUnreadable++;
         const phase = match.findIndex(
           (field, index) =>
             index >= 6 &&
-            /^(?:1st half|2nd half|half[ -]?time|finished|full[ -]?time|ended|not started|scheduled|postponed|cancelled|canceled|suspended|interrupted|extra[ -]?time|penalties)$/i.test(
+            /^(?:1st half|2nd half|half[ -]?time|pause|finished|full[ -]?time|ended|not started|scheduled|postponed|cancelled|canceled|suspended|interrupted|extra[ -]?time|penalties)$/i.test(
               field,
             ),
         );
-        records.push(match.slice(0, phase < 0 ? Math.min(match.length, 12) : phase + 1).join("\t"));
+        const minuteCell = resolveColumn(cells, minuteColumn),
+          phaseCell = resolveColumn(cells, phaseColumn);
+        records.push(
+          [
+            ...match.slice(0, 9),
+            halftime.value,
+            minuteCell ? cleanText(cellText(minuteCell)) : match[10] || "",
+            phaseCell ? cleanText(cellText(phaseCell)) : phase < 0 ? "" : match[phase],
+          ].join("\t"),
+        );
         if (records.length > 1000) throw Error("Najviše 1.000 mečeva po prenosu.");
       }
       diagnostics.footballRows = Math.max(diagnostics.footballRows, footballRows);
@@ -242,6 +375,9 @@ export function captureSnapshot(selector = "", reportErrors = false) {
       diagnostics.invalidCode = Math.max(diagnostics.invalidCode, invalidCode);
       diagnostics.invalidTime = Math.max(diagnostics.invalidTime, invalidTime);
       diagnostics.missingNames = Math.max(diagnostics.missingNames, missingNames);
+      diagnostics.halftimeRead = Math.max(diagnostics.halftimeRead, halftimeRead);
+      diagnostics.halftimeMissing = Math.max(diagnostics.halftimeMissing, halftimeMissing);
+      diagnostics.halftimeUnreadable = Math.max(diagnostics.halftimeUnreadable, halftimeUnreadable);
       if (records.length && footballRows === records.length) candidates.push(records);
     }
     const unique = [

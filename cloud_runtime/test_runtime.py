@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import time
@@ -10,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 from cloud_runtime.runtime import CloudRuntime, CloudRuntimeError, account_config, node_binary
 from streamlit_panel.api_client import ApiClient, ApiError
+from streamlit_panel.presentation import score_line
 
 ROOT = Path(__file__).resolve().parents[1]
 PASSWORD = "Cloud-runtime-test-password-only-123!"
@@ -111,6 +113,44 @@ class CloudRuntimeTests(unittest.TestCase):
         stefan.logout()
         with self.assertRaises(ApiError):
             stefan.monitor()
+
+    def test_score2_survives_chrome_import_and_is_displayed_beside_the_current_score(self):
+        self.start()
+        cookie, user = ApiClient().login("Stefan", PASSWORD)
+        client = ApiClient(cookie, user["id"])
+        native = "\t".join(
+            [
+                "F",
+                "Liga",
+                "72499",
+                "Domacin",
+                "Gost",
+                "sre 21:30",
+                "FT",
+                "0",
+                "6",
+                "0:5",
+                "46'",
+                "2nd half",
+            ]
+        )
+        preview = client.preview(native, "2026-11-11", "native")
+        self.assertEqual(preview["errors"], [])
+        self.assertEqual(preview["rows"][0]["score"], "0:6")
+        self.assertEqual(preview["rows"][0]["ht"], "0:5")
+        client.configure(
+            {"date": "2026-11-11", "sources": ["flash", "f24"], "matches": preview["rows"]},
+            False,
+            imported=True,
+            chrome_capture={
+                "id": "score2-read",
+                "capturedAt": datetime.now(timezone.utc).isoformat(),
+                "automatic": True,
+            },
+        )
+        match = client.monitor()["view"]["matches"][0]
+        self.assertEqual(match["ht"], "0:5")
+        self.assertIn("0:6 (0:5)", re.sub(r"<[^>]+>", "", score_line(match, ["flash", "f24"])))
 
     def test_supervisor_restarts_failed_child_and_restores_local_watch_and_session(self):
         runtime = self.start()
