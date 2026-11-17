@@ -10,6 +10,7 @@ from streamlit_panel.presentation import (
     SOURCE_NAMES,
     STATUS_NAMES,
     input_age,
+    display_date,
     local_time,
     preview_fingerprint,
     preview_rows,
@@ -171,7 +172,7 @@ def render_match_details(matches, sources, snapshot=None, operations_enabled=Fal
             "Interna šifra: "
             + str(match.get("internalId", "—"))
             + " · Datum: "
-            + str(match.get("date", "—"))
+            + display_date(match.get("date"))
         )
         st.caption(
             "Interni spisak uvezen: "
@@ -351,7 +352,10 @@ def import_page():
     c1, c2 = st.columns(2)
     with c1:
         base_date = st.date_input(
-            "Datum prvog dana spiska", value=datetime.now(BELGRADE).date(), key="import_date"
+            "Datum prvog dana spiska",
+            value=datetime.now(BELGRADE).date(),
+            key="import_date",
+            format="DD-MM-YYYY",
         )
     with c2:
         format_label = st.selectbox(
@@ -397,7 +401,10 @@ def import_page():
         if result.get("rows") and not result.get("errors"):
             dates = sorted({row.get("date", base_date.isoformat()) for row in result["rows"]})
             st.caption(
-                "Uvoz: " + str(len(result["rows"])) + " mečeva · datumi: " + ", ".join(dates)
+                "Uvoz: "
+                + str(len(result["rows"]))
+                + " mečeva · datumi: "
+                + ", ".join(display_date(value) for value in dates)
             )
             options = [SOURCE_NAMES[source] for source in watch.get("sources", ["flash"])]
             chosen = st.multiselect(

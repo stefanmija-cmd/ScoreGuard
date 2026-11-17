@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 from html import escape
 import hashlib
@@ -32,12 +32,19 @@ def input_age(value: str | None, now: datetime | None = None) -> str:
         return "Nepoznato"
 
 
+def display_date(value: str | None) -> str:
+    try:
+        return date.fromisoformat(value).strftime("%d-%m-%Y")
+    except (ValueError, TypeError):
+        return "—"
+
+
 def local_time(value: str | None, include_date: bool = False) -> str:
     if not isinstance(value, str) or not value:
         return "—"
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(BELGRADE)
-        return parsed.strftime("%d.%m.%Y. %H:%M:%S" if include_date else "%H:%M:%S")
+        return parsed.strftime("%d-%m-%Y %H:%M:%S" if include_date else "%H:%M:%S")
     except (ValueError, TypeError):
         return "—"
 
@@ -215,7 +222,7 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
     for match in matches:
         refs = match.get("refs", {})
         row = {
-            "Datum": match.get("date", ""),
+            "Datum": display_date(match.get("date")),
             "Početak": match.get("time", "—"),
             "Šifra": match.get("internalId", "—"),
             "Takmičenje": match.get("league", "—"),

@@ -180,7 +180,10 @@ def render_chrome_import(api, handle_error):
         "Oba taba moraju ostati otvorena u istom Chrome profilu. Prenose se samo učitani redovi, bez prelistavanja stranica. Izmena filtera ili skupa mečeva pauzira automatski uvoz do novog pregleda. Prijava ostaje u ScoreGuard-u; dodatak ne traži lozinku."
     )
     base_date = st.date_input(
-        "Datum prvog dana Chrome spiska", value=datetime.now(BELGRADE).date(), key="chrome_date"
+        "Datum prvog dana Chrome spiska",
+        value=datetime.now(BELGRADE).date(),
+        key="chrome_date",
+        format="DD-MM-YYYY",
     )
     if st.session_state.get("chrome_notice"):
         st.info(st.session_state["chrome_notice"])

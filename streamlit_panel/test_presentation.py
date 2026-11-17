@@ -73,7 +73,7 @@ class PresentationTests(unittest.TestCase):
         self.assertNotIn("Obrada", row)
 
     def test_belgrade_timezone_and_invalid_timestamp(self):
-        self.assertEqual(local_time("2026-11-09T23:30:00Z", True), "10.11.2026. 00:30:00")
+        self.assertEqual(local_time("2026-11-09T23:30:00Z", True), "10-11-2026 00:30:00")
         self.assertEqual(local_time("invalid"), "—")
 
 
