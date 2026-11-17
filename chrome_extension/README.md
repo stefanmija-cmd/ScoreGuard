@@ -27,7 +27,7 @@ Lozinke ostaju u prijavama tih aplikacija. U dodatak se ne unose nalozi ni API k
 
 Za automatski rad uključi **Čitaj tabelu na svakih 5 minuta** u dodatku i, prilikom potvrde prvog spiska, **Automatski uvozi naredne promene ovog spiska** u ScoreGuard-u. Provera rezultata Flashscore/Futbol24 ima svoj postojeći interval od 5 minuta; zato ukupno kašnjenje dve odvojene provere može biti duže od jednog intervala. Za trenutnu proveru klikni **Preuzmi iz Backoffice taba**, pa **Proveri sada** u pregledu.
 
-Promena rezultata ili perioda istih mečeva može da se uveze automatski. Promena skupa mečeva, datuma, timova ili vremena početka pauzira automatski uvoz i zahteva novi pregled. Time se izbegava zamena celog spiska jednom stranicom nakon prelistavanja ili filtriranja. Istovetni rezultati se ne uvoze ponovo pri svakom osvežavanju panela.
+Promena rezultata ili perioda istih mečeva može da se uveze automatski. Promena skupa mečeva, datuma, timova ili vremena početka pauzira automatski uvoz i zahteva novi pregled. Time se izbegava zamena celog spiska jednom stranicom nakon prelistavanja ili filtriranja. Svako uspešno novo čitanje osvežava vreme internog unosa i kada su rezultati isti. Ponovljeno prikazivanje istog prenosa ne predstavlja novo čitanje.
 
 Ostavi oba taba otvorena u istom Chrome profilu. Backoffice sam mora da ažurira svoju stranicu; dodatak ne zna koliko su podaci na toj stranici sveži u odnosu na interni server. Čitaju se samo redovi koje je stranica stvarno učitala. Sakriveni, neprelistani i virtuelizovani redovi nisu obuhvaćeni.
 
@@ -56,3 +56,13 @@ Ako čitanje ne uspe, otvori **Detalji čitanja** i kopiraj prikazani tekst. Tu 
 Ponovo preuzmi dodatak iz aplikacije ili novog GitHub ZIP-a, zameni fajlove u postojećoj fascikli i klikni Reload na `chrome://extensions`. U prozoru treba da piše **v0.1.2**. Ponovo poveži otvorene Backoffice i ScoreGuard tabove i klikni **Pročitaj sada**.
 
 Pretraga sada prvo obrađuje grid i ne zaustavlja se posle 20 drugih komponenti. Podržano je čitanje teksta ćelija kroz slotove web komponenti. U **Detaljima čitanja** dokumenti i **Shadow delovi** broje se odvojeno; vidi se i broj ćelija pročitanih kroz slotove. Ako je pretraga ograničena, spisak se ne prenosi delimično. Izbor tačnog selektora grida pretražuje samo taj deo stranice. Dijagnostika i dalje sadrži samo brojeve elemenata.
+
+## Ažuriranje na 0.1.3 — automatski uvoz
+
+U dodatku treba da piše **v0.1.3**. Zamenite fajlove dodatka, kliknite Reload na `chrome://extensions`, zatim osvežite ScoreGuard stranicu, prijavite se i ponovo povežite oba taba. Uključite automatiku u dodatku i prijem u ScoreGuard-u, pa potvrdite spisak i automatski uvoz.
+
+Svako čitanje ima sopstvenu oznaku prenosa, pa se novi snimak šalje i kada se rezultat nije promenio. **Interni unos** tada pokazuje vreme novog uspešnog uvoza. Sačuvani rezultati izvora i provera koja je u toku ostaju dostupni kada je spisak isti. Ovo ne podmlađuje Flashscore/Futbol24 podatke: oni zadržavaju svoje vreme preuzimanja.
+
+Dodatak prikazuje **Poslednji pokušaj**, **Poslednje čitanje** i **Sledeće čitanje**. Ako alarm nedostaje nakon ponovnog pokretanja, dodatak ga obnavlja. Otvoren prijemni panel proverava da li je termin dospeo, uz najviše jedno zakazano čitanje po petominutnom periodu. Ručno čitanje je dostupno u svakom trenutku.
+
+**Automatski uvoz** i **provera sportskih izvora** imaju zasebne prekidače. Ako Chrome uvoz prikazuje da su provere izvora pauzirane, kliknite **Uključi provere izvora na 5 minuta**. Samo uključivanje dodatka ne menja prethodno izabranu pauzu provera.

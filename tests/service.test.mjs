@@ -142,3 +142,64 @@ test("HTTP service rejects missing token and isolates operator lists", async () 
     await new Promise((r) => server.close(r));
   }
 });
+
+test("refreshing an unchanged imported list preserves references and the scheduled source check", async () => {
+  const { monitor, advance, collector } = setup();
+  collector.collect = async () => ({
+    checkedAt: new Date(1000000).toISOString(),
+    results: [
+      {
+        id: "1",
+        refs: {
+          flash: {
+            state: "verified",
+            score: "1:0",
+            ht: "0:0",
+            checkedAt: new Date(1000000).toISOString(),
+          },
+        },
+      },
+    ],
+    health: {},
+  });
+  await monitor.init();
+  await monitor.configure("op", watch, { imported: true });
+  await monitor.check("op");
+  const before = monitor.snapshot("op"),
+    generation = monitor.watches.op.generation;
+  advance(300000);
+  const after = await monitor.configure("op", before.watch, { enabled: true, imported: true });
+  assert.notEqual(after.importedAt, before.importedAt);
+  assert.deepEqual(after.lastResult, before.lastResult);
+  assert.equal(after.lastResult.results[0].refs.flash.score, "1:0");
+  assert.equal(
+    after.lastResult.results[0].refs.flash.checkedAt,
+    before.lastResult.results[0].refs.flash.checkedAt,
+  );
+  assert.equal(after.nextCheckAt, before.nextCheckAt);
+  assert.equal(after.revision, before.revision);
+  assert.equal(monitor.watches.op.generation, generation);
+});
+test("an unchanged imported refresh does not discard a source check already in flight", async () => {
+  const { monitor, collector, advance } = setup();
+  let release;
+  collector.collect = () => new Promise((resolve) => (release = resolve));
+  await monitor.init();
+  await monitor.configure("op", watch, { imported: true });
+  const pending = monitor.check("op");
+  const before = monitor.snapshot("op");
+  advance(1000);
+  const refreshed = await monitor.configure("op", before.watch, { enabled: true, imported: true });
+  assert.equal(refreshed.running, true);
+  const result = {
+    checkedAt: new Date().toISOString(),
+    results: [{ id: "1", refs: { flash: { state: "verified", score: "1:0", ht: "0:0" } } }],
+    health: {},
+  };
+  release(result);
+  const completed = await pending;
+  assert.notEqual(completed.discarded, true);
+  assert.deepEqual(monitor.snapshot("op").lastResult.results, result.results);
+  assert.equal(monitor.snapshot("op").lastResult.operator, "op");
+  assert.equal(monitor.snapshot("op").importedAt, refreshed.importedAt);
+});

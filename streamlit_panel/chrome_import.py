@@ -14,7 +14,7 @@ from streamlit_panel.presentation import BELGRADE, SOURCE_NAMES, local_time, pre
 from streamlit_panel.api_client import ApiError
 
 _bridge = components.declare_component(
-    "scoreguard_chrome_bridge", path=str(Path(__file__).with_name("chrome_component"))
+    "scoreguard_chrome_bridge_v013", path=str(Path(__file__).with_name("chrome_component"))
 )
 MAX_BYTES = 256000
 
@@ -34,6 +34,8 @@ def validate_packet(packet, operator, channel, now=None):
         packet.get("id") != hashlib.sha256(text.encode()).hexdigest()
         or not isinstance(packet.get("requestId", ""), str)
         or len(packet.get("requestId", "")) > 100
+        or not isinstance(packet.get("captureId", ""), str)
+        or len(packet.get("captureId", "")) > 100
     ):
         raise ValueError("Sadržaj prenosa nije celovit.")
     try:
@@ -71,7 +73,9 @@ def result_fingerprint(rows):
 
 def receive_packet(packet, api, operator, channel, session, now=None):
     delivery_id = (
-        str(packet.get("id", "")) + ":" + str(packet.get("requestId", ""))
+        str(packet.get("id", ""))
+        + ":"
+        + str(packet.get("captureId") or packet.get("capturedAt", ""))
         if isinstance(packet, dict)
         else ""
     )
@@ -83,6 +87,11 @@ def receive_packet(packet, api, operator, channel, session, now=None):
     ):
         return False
     text = validate_packet(packet, operator, channel, now)
+    previous_capture = session.get("chrome_received_at")
+    if previous_capture and datetime.fromisoformat(
+        packet["capturedAt"].replace("Z", "+00:00")
+    ) < datetime.fromisoformat(previous_capture.replace("Z", "+00:00")):
+        return False
     selected_date = session.get("chrome_date")
     base_date = (
         selected_date.isoformat()
@@ -94,6 +103,7 @@ def receive_packet(packet, api, operator, channel, session, now=None):
     settings = session.get("chrome_auto_settings")
     if not settings:
         session["chrome_received_id"] = delivery_id
+        session["chrome_received_at"] = packet["capturedAt"]
         session["chrome_notice"] = (
             "Primljen spisak. Otvorite Chrome uvoz, proverite pregled i potvrdite prvi uvoz."
         )
@@ -111,24 +121,36 @@ def receive_packet(packet, api, operator, channel, session, now=None):
     ):
         session.pop("chrome_auto_settings", None)
         session["chrome_received_id"] = delivery_id
+        session["chrome_received_at"] = packet["capturedAt"]
         session["chrome_notice"] = (
             "Automatski uvoz je pauziran: promenjeni su spisak, datum ili format. Postojeći spisak nije zamenjen. Proverite Chrome uvoz i potvrdite ponovo."
         )
         return True
     fingerprint = result_fingerprint(rows)
-    if fingerprint != session.get("chrome_applied_fingerprint"):
-        api.configure(
-            {"date": base_date, "sources": watch["sources"], "matches": rows},
-            snapshot.get("enabled", False),
-            imported=True,
-        )
-        session["chrome_applied_fingerprint"] = fingerprint
-        session["chrome_last_import"] = packet["capturedAt"]
-        session["chrome_notice"] = (
-            "Ažurirano iz otvorenog Backoffice taba: " + str(len(rows)) + " mečeva."
-        )
+    changed = fingerprint != result_fingerprint(watch["matches"])
+    if changed:
+        ids = {
+            (row.get("date", ""), str(row.get("internalId", ""))): row["id"]
+            for row in watch["matches"]
+        }
+        rows = [
+            {**row, "id": ids[(row.get("date", ""), str(row.get("internalId", "")))]}
+            for row in rows
+        ]
+        imported_watch = {"date": base_date, "sources": watch["sources"], "matches": rows}
+    else:
+        imported_watch = watch
+    api.configure(imported_watch, snapshot.get("enabled", False), imported=True)
+    session["chrome_applied_fingerprint"] = fingerprint
+    session["chrome_last_import"] = packet["capturedAt"]
+    session["chrome_notice"] = (
+        "Ažurirano iz otvorenog Backoffice taba: " + str(len(rows)) + " mečeva."
+        if changed
+        else "Spisak je ponovo pročitan i uvezen; rezultati se nisu promenili."
+    )
     session.pop("chrome_pending", None)
     session["chrome_received_id"] = delivery_id
+    session["chrome_received_at"] = packet["capturedAt"]
     return True
 
 
@@ -146,7 +168,7 @@ def extension_zip():
 def render_receiver(api, operator, handle_error):
     channel = st.session_state.setdefault("chrome_channel", secrets.token_hex(24))
     packet = _bridge(
-        channel=channel, operator=operator, default=None, key="scoreguard_chrome_receiver"
+        channel=channel, operator=operator, default=None, key="scoreguard_chrome_receiver_v013"
     )
     if st.session_state.get("chrome_notice"):
         st.caption(st.session_state["chrome_notice"])
@@ -185,10 +207,32 @@ def render_chrome_import(api, handle_error):
         key="chrome_date",
         format="DD-MM-YYYY",
     )
+    try:
+        snapshot = api.monitor().get("monitor") or {}
+    except ApiError as error:
+        handle_error(error)
+        return
+    if snapshot.get("watch"):
+        if snapshot.get("enabled"):
+            st.caption("Automatska provera Flashscore/Futbol24 rezultata je uključena.")
+        else:
+            st.warning(
+                "Uvoz internog spiska i provera rezultata su odvojeni. Provere izvora su trenutno pauzirane; zato rezultati mogu ostati „Nije provereno“."
+            )
+            if st.button("Uključi provere izvora na 5 minuta", key="chrome_enable_checks"):
+                try:
+                    api.configure(snapshot["watch"], True)
+                    st.rerun()
+                except ApiError as error:
+                    handle_error(error)
     if st.session_state.get("chrome_notice"):
         st.info(st.session_state["chrome_notice"])
     if st.session_state.get("chrome_auto_settings"):
         st.success("Automatski uvoz promena potvrđenog spiska je uključen.")
+        st.caption(
+            "Poslednje uspešno čitanje i uvoz: "
+            + local_time(st.session_state.get("chrome_last_import"), True)
+        )
         if st.button("Pauziraj automatski uvoz", key="chrome_pause"):
             st.session_state.pop("chrome_auto_settings", None)
             st.rerun()
@@ -219,7 +263,6 @@ def render_chrome_import(api, handle_error):
         )
         if not rows or result.get("errors"):
             return
-        snapshot = api.monitor().get("monitor") or {}
         defaults = [
             SOURCE_NAMES[key]
             for key in snapshot.get("watch", {}).get("sources", ["flash"])

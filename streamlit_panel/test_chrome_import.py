@@ -133,13 +133,22 @@ class ChromeImportTests(unittest.TestCase):
         self.api.configure.assert_not_called()
         self.assertNotIn("chrome_auto_settings", self.session)
 
-    def test_duplicate_delivery_and_unchanged_scores_do_not_refresh_import_age(self):
+    def test_new_reads_refresh_import_age_without_reimporting_duplicate_deliveries(self):
         self.arm()
         value = packet()
         self.assertTrue(self.receive(value))
         self.assertFalse(self.receive(value))
-        self.api.configure.assert_not_called()
-        self.assertNotIn("chrome_last_import", self.session)
+        self.api.configure.assert_called_once_with(
+            self.api.monitor.return_value["monitor"]["watch"], False, imported=True
+        )
+        self.assertEqual(self.session["chrome_last_import"], value["capturedAt"])
+        newer = packet(
+            captureId="fresh-read",
+            capturedAt=(datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat(),
+        )
+        self.assertTrue(self.receive(newer))
+        self.assertEqual(self.api.configure.call_count, 2)
+        self.assertEqual(self.session["chrome_last_import"], newer["capturedAt"])
 
     def test_manual_reread_of_same_content_can_refresh_an_unconfirmed_preview(self):
         first = packet()
@@ -150,6 +159,28 @@ class ChromeImportTests(unittest.TestCase):
             self.session["chrome_pending"]["packet"]["capturedAt"], second["capturedAt"]
         )
         self.api.configure.assert_not_called()
+
+    def test_score_changes_keep_backend_match_ids_instead_of_new_parser_ids(self):
+        self.arm()
+        self.api.monitor.return_value["monitor"]["watch"]["matches"][0]["id"] = "stable-backend-id"
+        parsed = fixture("2:1")
+        parsed["id"] = "new-parser-id"
+        self.api.preview.return_value["rows"] = [parsed]
+        self.receive(packet(captureId="new-score"))
+        saved = self.api.configure.call_args.args[0]
+        self.assertEqual(saved["matches"][0]["id"], "stable-backend-id")
+        self.assertEqual(saved["matches"][0]["score"], "2:1")
+
+    def test_older_read_cannot_replace_a_newer_import(self):
+        self.arm()
+        newer = packet(
+            captureId="newer",
+            capturedAt=(datetime.now(timezone.utc) + timedelta(seconds=1)).isoformat(),
+        )
+        self.assertTrue(self.receive(newer))
+        self.assertFalse(self.receive(packet(captureId="older")))
+        self.api.configure.assert_called_once()
+        self.assertEqual(self.session["chrome_last_import"], newer["capturedAt"])
 
     def test_extension_download_is_complete_and_excludes_server_configuration(self):
         with zipfile.ZipFile(io.BytesIO(extension_zip())) as archive:
@@ -180,6 +211,45 @@ class ChromeImportTests(unittest.TestCase):
         self.assertNotIn("chrome_received_id", self.session)
         self.assertTrue(self.receive(value))
         self.assertEqual(self.api.configure.call_count, 2)
+
+    def test_paused_source_checks_are_visible_and_can_be_enabled_from_chrome_page(self):
+        api = self.api
+        api.me.return_value = {
+            "id": OPERATOR,
+            "name": "Test",
+            "role": "operator",
+            "authenticated": True,
+        }
+        payload = FakeApi().monitor()
+        api.monitor.return_value = payload
+
+        def configure(watch, enabled, **kwargs):
+            payload["monitor"]["enabled"] = enabled
+
+        api.configure.side_effect = configure
+        with patch("streamlit_panel.api_client.ApiClient", return_value=api):
+            app = AppTest.from_file(
+                str(Path(__file__).with_name("streamlit_app.py")), default_timeout=20
+            )
+            app.session_state["auth_cookie"] = "test-cookie"
+            app.session_state["user"] = {"id": OPERATOR}
+            app.session_state["page"] = "Chrome uvoz"
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertTrue(
+                any(
+                    "Provere izvora su trenutno pauzirane" in notice.value for notice in app.warning
+                )
+            )
+            app.button(key="chrome_enable_checks").click().run()
+            self.assertFalse(app.exception)
+            api.configure.assert_called_once_with(payload["monitor"]["watch"], True)
+            self.assertTrue(
+                any(
+                    "provera Flashscore/Futbol24 rezultata je uključena" in caption.value
+                    for caption in app.caption
+                )
+            )
 
     def test_streamlit_chrome_flow_requires_opt_in_preview_and_explicit_first_import(self):
         api = self.api

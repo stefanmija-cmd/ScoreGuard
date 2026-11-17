@@ -1,14 +1,14 @@
 // This script runs only on the explicitly granted ScoreGuard origin.
 (() => {
   if (
-    globalThis.__scoreguardRelay ||
     !location.pathname.includes("/component/") ||
     !location.pathname.includes("scoreguard_chrome_bridge")
   )
     return;
-  globalThis.__scoreguardRelay = true;
+  if (globalThis.__scoreguardRelay?.listener)
+    window.removeEventListener("message", globalThis.__scoreguardRelay.listener);
   let busy = false;
-  window.addEventListener("message", async (event) => {
+  const listener = async (event) => {
     const value = event.data;
     if (
       event.source !== window ||
@@ -29,6 +29,7 @@
       window.postMessage(
         {
           type: "SG_CHROME_DATA",
+          relayVersion: "0.1.3",
           channel: value.channel,
           operator: value.operator,
           requestId: value.refresh === true ? value.requestId : "",
@@ -40,6 +41,7 @@
       window.postMessage(
         {
           type: "SG_CHROME_DATA",
+          relayVersion: "0.1.3",
           channel: value.channel,
           ok: false,
           error: "Ponovo povežite ScoreGuard tab u dodatku.",
@@ -49,5 +51,7 @@
     } finally {
       busy = false;
     }
-  });
+  };
+  globalThis.__scoreguardRelay = { version: "0.1.3", listener };
+  window.addEventListener("message", listener);
 })();

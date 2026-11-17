@@ -133,8 +133,14 @@ export class Monitor {
       old = this.watches[operator];
     if (!old && Object.keys(this.watches).length >= this.maxOperators)
       throw Error("Dostignut je maksimalan broj operatera.");
-    if (old?.revision === revision && old.enabled === enabled && !imported)
+    if (old?.revision === revision && old.enabled === enabled) {
+      if (imported) {
+        old.importedAt = new Date(this.clock()).toISOString();
+        old.updatedAt = old.importedAt;
+        await this.store.save(this.watches);
+      }
       return this.snapshot(operator);
+    }
     const inputSignature = (w) =>
         JSON.stringify([w.date, w.matches.map(({ id, ...match }) => match)]),
       inputChanged = !old || inputSignature(old.watch) !== inputSignature(watch);

@@ -74,6 +74,7 @@ async function worker(settings = {}, injectedResult) {
     events = {};
   let reads = 0;
   const alarms = [];
+  const activeAlarms = new Map();
   function store(data) {
     return {
       get: async (keys) =>
@@ -94,6 +95,7 @@ async function worker(settings = {}, injectedResult) {
       getURL: (path) => "chrome-extension://scoreguard-test/" + path,
       onMessage: { addListener: (fn) => (events.message = fn) },
       onStartup: { addListener: (fn) => (events.start = fn) },
+      onInstalled: { addListener: (fn) => (events.installed = fn) },
     },
     storage: { local: store(local), session: store(session) },
     tabs: {
@@ -107,8 +109,17 @@ async function worker(settings = {}, injectedResult) {
     },
     permissions: { contains: async () => true },
     alarms: {
-      clear: async () => {},
-      create: async (name, options) => alarms.push({ name, ...options }),
+      get: async (name) => activeAlarms.get(name),
+      clear: async (name) => activeAlarms.delete(name),
+      create: async (name, options) => {
+        const alarm = {
+          name,
+          ...options,
+          scheduledTime: options.when || Date.now() + options.periodInMinutes * 60000,
+        };
+        alarms.push(alarm);
+        activeAlarms.set(name, alarm);
+      },
       onAlarm: { addListener: (fn) => (events.alarm = fn) },
     },
     scripting: {
@@ -126,7 +137,15 @@ async function worker(settings = {}, injectedResult) {
   };
   globalThis.chrome = chrome;
   const module = await import("../chrome_extension/background.mjs?test=" + serial++);
-  return { handle: module.handleMessage, local, session, events, alarms, reads: () => reads };
+  return {
+    handle: module.handleMessage,
+    local,
+    session,
+    events,
+    alarms,
+    activeAlarms,
+    reads: () => reads,
+  };
 }
 const settings = () => ({
   source: { origin: "https://backoffice.test", pathname: "/matches", tabId: 7 },
@@ -165,10 +184,13 @@ test("manual browser bridge captures once and polling reuses the same snapshot",
   assert.equal(runtime.reads(), 1);
   assert.doesNotMatch(JSON.stringify(first), /token=|password|Cookie/);
 });
-test("five-minute automatic capture and disconnect preserve explicit control", async () => {
+test("five-minute automatic capture and disconnect preserve explicit control", async (t) => {
+  let now = Date.now();
+  t.mock.method(Date, "now", () => now);
   const runtime = await worker(settings());
   await runtime.handle({ type: "automatic", enabled: true }, popup);
   assert.equal(runtime.alarms.at(-1).periodInMinutes, 5);
+  now += 300000;
   await runtime.events.alarm({ name: "scoreguard-passive-capture" });
   assert.equal(runtime.reads(), 2);
   await runtime.handle({ type: "disconnect" }, popup);
@@ -199,7 +221,7 @@ test("extension manifest uses optional site grants and no cookie or network inte
     );
 });
 
-test("Streamlit bridge checks channel, origin and operator and deduplicates unchanged snapshots", () => {
+test("Streamlit bridge rejects other sessions, deduplicates delivery and forwards fresh unchanged reads", () => {
   const sent = [],
     callbacks = {},
     parent = { postMessage: (value) => sent.push(value) },
@@ -261,6 +283,17 @@ test("Streamlit bridge checks channel, origin and operator and deduplicates unch
     data: { ...value, requestId: "manual-refresh" },
   });
   assert.equal(sent.filter((entry) => entry.type === "streamlit:setComponentValue").length, 2);
+  const fresh = {
+    ...value,
+    snapshot: {
+      ...value.snapshot,
+      captureId: "another-read",
+      capturedAt: new Date(Date.now() + 1).toISOString(),
+    },
+  };
+  callbacks.message({ source: window, origin: context.location.origin, data: fresh });
+  callbacks.message({ source: window, origin: context.location.origin, data: fresh });
+  assert.equal(sent.filter((entry) => entry.type === "streamlit:setComponentValue").length, 3);
 });
 
 test("navigating away from the bound Backoffice page blocks capture and hides cached data", async () => {
@@ -268,8 +301,10 @@ test("navigating away from the bound Backoffice page blocks capture and hides ca
   configured.source.pathname = "/another-screen";
   const runtime = await worker(configured);
   runtime.session["scoreguard-snapshot"] = { text: "previous-data" };
-  await assert.rejects(runtime.handle({ ...pull, refresh: true }, bridge), /tab je promenjen/);
-  await assert.rejects(runtime.handle(pull, bridge), /tab je promenjen/);
+  const failed = await runtime.handle({ ...pull, refresh: true }, bridge);
+  assert.match(failed.error, /tab je promenjen/);
+  assert.equal(failed.snapshot, null);
+  assert.match((await runtime.handle(pull, bridge)).error, /tab je promenjen/);
   assert.equal(runtime.reads(), 0);
 });
 
@@ -372,8 +407,10 @@ test("injected extraction failures survive Chrome serialization", async () => {
 test("extraction errors do not return a previously cached snapshot", async () => {
   const runtime = await worker(settings(), capture([], "", true));
   runtime.session["scoreguard-snapshot"] = { text: "old data" };
-  await assert.rejects(runtime.handle({ ...pull, refresh: true }, bridge), /Nema prepoznatih/);
-  await assert.rejects(runtime.handle(pull, bridge), /Nema prepoznatih/);
+  const failed = await runtime.handle({ ...pull, refresh: true }, bridge);
+  assert.match(failed.error, /Nema prepoznatih/);
+  assert.equal(failed.snapshot, null);
+  assert.match((await runtime.handle(pull, bridge)).error, /Nema prepoznatih/);
 });
 
 function loadedGridPage(toolbarCount = 80) {
@@ -454,4 +491,80 @@ test("slotted football cells produce the native import format without reading fo
   assert.equal(imported.rows[0].score, "0:0");
   assert.ok(result.diagnostics.slottedCells >= 12);
   assert.doesNotMatch(result.text, /secret-form-value/);
+});
+
+test("opening status restores a missing alarm without postponing an existing deadline", async (t) => {
+  let now = Date.now();
+  t.mock.method(Date, "now", () => now);
+  const runtime = await worker({ ...settings(), automatic: true });
+  await runtime.handle({ type: "capture" }, popup);
+  const due = runtime.alarms.at(-1).scheduledTime;
+  runtime.activeAlarms.clear();
+  now += 60000;
+  const recovered = await runtime.handle({ type: "state" }, popup);
+  assert.equal(Date.parse(recovered.status.nextReadAt), due);
+  const created = runtime.alarms.length;
+  for (let i = 0; i < 6; i++) {
+    now += 30000;
+    await runtime.handle(pull, bridge);
+  }
+  assert.equal(runtime.alarms.length, created);
+  assert.equal(runtime.reads(), 1);
+  assert.equal(runtime.alarms.at(-1).scheduledTime, due);
+});
+test("bridge polling recovers a missed timer once and gives identical content a new capture ID", async (t) => {
+  let now = Date.now();
+  t.mock.method(Date, "now", () => now);
+  const runtime = await worker({ ...settings(), automatic: true });
+  const first = await runtime.handle(pull, bridge);
+  now += 299999;
+  await runtime.handle(pull, bridge);
+  assert.equal(runtime.reads(), 1);
+  now += 1;
+  const second = await runtime.handle(pull, bridge);
+  assert.equal(runtime.reads(), 2);
+  assert.equal(second.snapshot.id, first.snapshot.id);
+  assert.notEqual(second.snapshot.captureId, first.snapshot.captureId);
+  assert.notEqual(second.snapshot.capturedAt, first.snapshot.capturedAt);
+  await runtime.events.alarm({ name: "scoreguard-passive-capture" });
+  assert.equal(runtime.reads(), 2);
+  assert.equal(Date.parse(second.status.nextReadAt), now + 300000);
+});
+test("a failed scheduled read is reported and does not retry on every bridge poll", async (t) => {
+  let now = Date.now();
+  t.mock.method(Date, "now", () => now);
+  const runtime = await worker({ ...settings(), automatic: true }, capture([], "", true));
+  const failed = await runtime.handle(pull, bridge);
+  assert.match(failed.error, /Nema prepoznatih/);
+  assert.equal(failed.snapshot, null);
+  now += 3000;
+  await runtime.handle(pull, bridge);
+  assert.equal(runtime.reads(), 1);
+  now += 297000;
+  await runtime.handle(pull, bridge);
+  assert.equal(runtime.reads(), 2);
+});
+test("installing or restarting the extension repairs scheduling without resetting its settings", async () => {
+  const runtime = await worker({ ...settings(), automatic: true });
+  await runtime.events.installed();
+  assert.equal(runtime.activeAlarms.size, 1);
+  const due = runtime.alarms.at(-1).scheduledTime;
+  await runtime.events.start();
+  assert.equal(runtime.alarms.at(-1).scheduledTime, due);
+  assert.equal(runtime.local["scoreguard-config"].automatic, true);
+});
+test("rebinding replaces an existing relay listener instead of retaining an invalidated context", () => {
+  const listeners = new Set();
+  const window = {
+    addEventListener: (_type, listener) => listeners.add(listener),
+    removeEventListener: (_type, listener) => listeners.delete(listener),
+  };
+  const context = vm.createContext({
+    window,
+    location: { pathname: "/component/scoreguard_chrome_bridge_v013/index.html" },
+  });
+  const code = fs.readFileSync(new URL("../chrome_extension/relay.js", import.meta.url), "utf8");
+  vm.runInContext(code, context);
+  vm.runInContext(code, context);
+  assert.equal(listeners.size, 1);
 });

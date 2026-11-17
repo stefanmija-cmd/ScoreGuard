@@ -21,12 +21,22 @@ async function show() {
         " vidljivih mečeva · pročitano " +
         new Date(state.capturedAt).toLocaleTimeString("sr-Latn-RS")
       : "Povežite oba taba, pa pročitajte tabelu.");
+  if (state.status)
+    $("status").textContent +=
+      "\nPoslednji pokušaj: " +
+      (state.status.lastAttemptAt
+        ? new Date(state.status.lastAttemptAt).toLocaleTimeString("sr-Latn-RS")
+        : "—") +
+      "\nSledeće čitanje: " +
+      (state.status.automatic && state.status.nextReadAt
+        ? new Date(state.status.nextReadAt).toLocaleTimeString("sr-Latn-RS")
+        : "ručni režim");
 
   $("reading-details").hidden = !state.diagnostics;
   if (state.diagnostics) {
     const d = state.diagnostics;
     $("diagnostics").textContent =
-      "Verzija: 0.1.2\nDokumenti: " +
+      "Verzija: 0.1.3\nDokumenti: " +
       d.documents +
       "\nShadow delovi: " +
       (d.shadowRoots || 0) +

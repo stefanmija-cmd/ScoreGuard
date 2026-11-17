@@ -3,6 +3,8 @@ import { captureSnapshot } from "./capture.mjs";
 const ALARM = "scoreguard-passive-capture";
 const CONFIG = "scoreguard-config";
 const SNAPSHOT = "scoreguard-snapshot";
+const READ_INTERVAL_MS = 300000;
+const SESSION_KEYS = [SNAPSHOT, "lastError", "lastDiagnostics", "lastAttemptAt"];
 let captureRunning;
 const config = async () => (await chrome.storage.local.get(CONFIG))[CONFIG] || {};
 function locationKey(value) {
@@ -18,9 +20,34 @@ function samePage(value, binding) {
     return false;
   }
 }
-async function schedule(settings) {
-  await chrome.alarms.clear(ALARM);
-  if (settings.automatic) await chrome.alarms.create(ALARM, { periodInMinutes: 5 });
+async function ensureAlarm(settings, reset = false) {
+  const alarm = await chrome.alarms.get(ALARM);
+  if (!settings.automatic || !settings.source || !settings.app) {
+    if (alarm) await chrome.alarms.clear(ALARM);
+    return null;
+  }
+  if (reset || !alarm || alarm.periodInMinutes !== 5) {
+    const session = await chrome.storage.session.get("lastAttemptAt");
+    const attempted = Date.parse(session.lastAttemptAt);
+    const now = Date.now();
+    const due =
+      Number.isFinite(attempted) && attempted <= now + 30000
+        ? attempted + READ_INTERVAL_MS
+        : now + READ_INTERVAL_MS;
+    await chrome.alarms.create(ALARM, { when: Math.max(now + 1000, due), periodInMinutes: 5 });
+    return chrome.alarms.get(ALARM);
+  }
+  return alarm;
+}
+async function readStatus(settings, session) {
+  const alarm = await ensureAlarm(settings);
+  return {
+    automatic: settings.automatic === true,
+    lastAttemptAt: session.lastAttemptAt || null,
+    capturedAt: session[SNAPSHOT]?.capturedAt || null,
+    nextReadAt: alarm?.scheduledTime ? new Date(alarm.scheduledTime).toISOString() : null,
+    error: session.lastError || "",
+  };
 }
 async function registerRelay(settings) {
   await chrome.scripting.unregisterContentScripts({ ids: ["scoreguard-relay"] }).catch(() => {});
@@ -39,11 +66,24 @@ async function registerRelay(settings) {
     .executeScript({ target: { tabId: settings.app.tabId, allFrames: true }, files: ["relay.js"] })
     .catch(() => {});
 }
-async function capture() {
+async function capture(force = true) {
   if (captureRunning) return captureRunning;
+  let attempted = false;
   captureRunning = (async () => {
     const settings = await config();
     if (!settings.source) throw Error("Prvo povežite Backoffice tab.");
+    const session = await chrome.storage.session.get(SESSION_KEYS);
+    const now = Date.now();
+    const previousAttempt = Date.parse(session.lastAttemptAt);
+    if (
+      !force &&
+      Number.isFinite(previousAttempt) &&
+      now - previousAttempt >= -30000 &&
+      now - previousAttempt < READ_INTERVAL_MS
+    )
+      return session[SNAPSHOT] || null;
+    attempted = true;
+    await chrome.storage.session.set({ lastAttemptAt: new Date(now).toISOString() });
     const tab = await chrome.tabs.get(settings.source.tabId);
     if (!samePage(tab.url, settings.source))
       throw Error("Backoffice tab je promenjen. Ponovo povežite tačan spisak.");
@@ -64,9 +104,10 @@ async function capture() {
     const snapshot = {
       version: 1,
       id,
+      captureId: crypto.randomUUID(),
       text: value.text,
       count: value.count,
-      capturedAt: new Date().toISOString(),
+      capturedAt: new Date(Date.now()).toISOString(),
       sourceOrigin: settings.source.origin,
     };
     await chrome.storage.session.set({ [SNAPSHOT]: snapshot, lastError: "" });
@@ -79,6 +120,7 @@ async function capture() {
     throw error;
   } finally {
     captureRunning = null;
+    if (attempted) await ensureAlarm(await config(), true);
   }
 }
 export async function handleMessage(message, sender) {
@@ -101,11 +143,15 @@ export async function handleMessage(message, sender) {
       message.operator.length > 100
     )
       throw Error("Neispravan kanal prijavljenog operatera.");
-    if (message.refresh === true) await capture();
-    const session = await chrome.storage.session.get([SNAPSHOT, "lastError", "lastDiagnostics"]);
-    if (session.lastError) throw Error(session.lastError);
+    await ensureAlarm(settings);
+    if (message.refresh === true || settings.automatic)
+      await capture(message.refresh === true).catch(() => {});
+    const session = await chrome.storage.session.get(SESSION_KEYS);
+    const status = await readStatus(settings, session);
     return {
-      snapshot: session[SNAPSHOT] || null,
+      snapshot: session.lastError ? null : session[SNAPSHOT] || null,
+      error: session.lastError || "",
+      status,
       channel: message.channel,
       operator: message.operator,
     };
@@ -113,7 +159,7 @@ export async function handleMessage(message, sender) {
   if (sender.url !== chrome.runtime.getURL("popup.html"))
     throw Error("Komanda je dostupna samo iz dodatka.");
   if (message.type === "state") {
-    const session = await chrome.storage.session.get([SNAPSHOT, "lastError", "lastDiagnostics"]);
+    const session = await chrome.storage.session.get(SESSION_KEYS);
     const latest = session[SNAPSHOT];
     return {
       settings,
@@ -121,6 +167,7 @@ export async function handleMessage(message, sender) {
       capturedAt: latest?.capturedAt,
       error: session.lastError,
       diagnostics: session.lastDiagnostics,
+      status: await readStatus(settings, session),
     };
   }
   if (message.type === "bind") {
@@ -135,10 +182,10 @@ export async function handleMessage(message, sender) {
         .trim()
         .slice(0, 300);
       settings.automatic = false;
-      await chrome.storage.session.remove([SNAPSHOT, "lastError", "lastDiagnostics"]);
+      await chrome.storage.session.remove(SESSION_KEYS);
     }
     await chrome.storage.local.set({ [CONFIG]: settings });
-    await schedule(settings);
+    await ensureAlarm(settings);
     if (message.side === "app") await registerRelay(settings);
     return { ok: true };
   }
@@ -146,14 +193,14 @@ export async function handleMessage(message, sender) {
     if (!settings.source || !settings.app) throw Error("Povežite oba taba.");
     settings.automatic = message.enabled === true;
     await chrome.storage.local.set({ [CONFIG]: settings });
-    await schedule(settings);
+    await ensureAlarm(settings);
     if (settings.automatic) await capture();
     return { ok: true };
   }
   if (message.type === "capture") return { snapshot: await capture() };
   if (message.type === "disconnect") {
     await chrome.storage.local.remove(CONFIG);
-    await chrome.storage.session.remove([SNAPSHOT, "lastError", "lastDiagnostics"]);
+    await chrome.storage.session.remove(SESSION_KEYS);
     await chrome.alarms.clear(ALARM);
     await chrome.scripting.unregisterContentScripts({ ids: ["scoreguard-relay"] }).catch(() => {});
     return { ok: true };
@@ -167,10 +214,16 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   return true;
 });
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === ALARM && (await config()).automatic) await capture().catch(() => {});
+  if (alarm.name === ALARM && (await config()).automatic) await capture(false).catch(() => {});
 });
 chrome.runtime.onStartup.addListener(async () => {
   const settings = await config();
-  await schedule(settings);
+  await ensureAlarm(settings);
+  await registerRelay(settings);
+});
+
+chrome.runtime.onInstalled.addListener(async () => {
+  const settings = await config();
+  await ensureAlarm(settings);
   await registerRelay(settings);
 });

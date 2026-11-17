@@ -132,3 +132,9 @@ Za automatski rad uključi čitanje na pet minuta u dodatku i **Automatski uvozi
 Promena rezultata istih mečeva može da se uveze automatski. Promena skupa mečeva, timova, datuma ili vremena početka pauzira uvoz do novog pregleda. Za trenutno čitanje klikni **Preuzmi iz Backoffice taba** u levom meniju, pa **Proveri sada** u pregledu rezultata. Provera javnih izvora i čitanje Backoffice-a imaju zasebne rasporede.
 
 Posle odjave prijem treba ponovo uključiti i potvrditi spisak. Opcija **Pauziraj automatski uvoz** zaustavlja zamenu internog spiska; postojeće provere izvora ostaju u stanju koje si izabrao. Isključivanje **Primaj iz Chrome dodatka** takođe zaustavlja automatski uvoz. Loša ili prazna tabela ne briše postojeći spisak.
+
+## 14. Provera automatskog Chrome uvoza
+
+Dodatak v0.1.3 prikazuje poslednje i sledeće čitanje. Svako novo uspešno čitanje ažurira **Interni unos**, i kada su rezultati nepromenjeni. Osvežavanje ekrana na 15 sekundi samo prikazuje postojeće podatke. Vreme preuzimanja rezultata sa sajtova ostaje posebno i ne menja se samim uvozom.
+
+Na stranici **Chrome uvoz** vidiš vreme poslednjeg uspešnog čitanja i uvoza. Ako piše da su provere izvora pauzirane, klikni **Uključi provere izvora na 5 minuta**, pa se vrati na pregled. Zatvoren tab, uspavan računar ili istek prijave i dalje prekidaju prenos; u levom meniju proveri poruku dodatka.
