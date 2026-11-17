@@ -218,8 +218,8 @@ def table_rows(matches: list[dict], sources: list[str]) -> list[dict]:
             "Datum": match.get("date", ""),
             "Početak": match.get("time", "—"),
             "Šifra": match.get("internalId", "—"),
-            "Utakmica": match.get("match", "—"),
             "Takmičenje": match.get("league", "—"),
+            "Utakmica": match.get("match", "—"),
             "Interno": combined_score(*score_values(match)),
         }
         for source in sources:
