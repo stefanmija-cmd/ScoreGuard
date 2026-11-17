@@ -241,6 +241,10 @@ def render_match_details(matches, sources, snapshot=None, operations_enabled=Fal
             st.rerun(scope="app")
 
 
+def reset_monitor_page():
+    st.session_state["monitor_page_number"] = 1
+
+
 @st.fragment(run_every="15s")
 def monitor_page():
     data = load_snapshot()
@@ -284,7 +288,7 @@ def monitor_page():
     for source, health in (last.get("health") or {}).items():
         if health.get("state") in {"unavailable", "partial"}:
             st.warning(health.get("message", SOURCE_NAMES[source] + " nije dostupan."))
-    filters, search = st.columns([2, 1])
+    filters, search, sort = st.columns([2, 1, 1])
     with filters:
         selected_filter = st.radio(
             "Prikaži",
@@ -294,6 +298,13 @@ def monitor_page():
         )
     with search:
         query = st.text_input("Pretraži tim, ligu ili šifru", key="search")
+    with sort:
+        kickoff_sort = st.selectbox(
+            "Sortiraj po početku",
+            ["Najranije prvo", "Najkasnije prvo"],
+            key="kickoff_sort",
+            on_change=reset_monitor_page,
+        )
     wanted = {"Neslaganja": "mismatch", "Nije provereno": "unverified", "Usaglašeno": "match"}.get(
         selected_filter
     )
@@ -309,7 +320,9 @@ def monitor_page():
     ]
     sources = snapshot["watch"]["sources"]
     matches = sorted(
-        matches, key=lambda match: (match.get("priority", 3), match.get("date", ""), match["time"])
+        matches,
+        key=lambda match: (match.get("date") or snapshot["watch"]["date"], match["time"]),
+        reverse=kickoff_sort == "Najkasnije prvo",
     )
     pages = max(1, (len(matches) + 99) // 100)
     if st.session_state.get("monitor_page_number", 1) > pages:

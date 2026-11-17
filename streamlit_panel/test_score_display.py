@@ -180,6 +180,51 @@ class ScoreDisplayTests(unittest.TestCase):
             'data-part="score-away" title="Neslaganje: rezultat gosta">1</strong>', details[1]
         )
 
+    def test_kickoff_can_sort_both_directions_across_dates_without_priority_grouping(self):
+        payload = FakeApi().monitor()
+        times = [
+            ("A", "2026-11-17", "21:00", 0),
+            ("B", "2026-11-17", "09:30", 3),
+            ("C", "2026-11-18", "00:10", 0),
+            ("D", "2026-10-31", "23:50", 1),
+            ("E", "2026-11-01", "00:10", 2),
+        ]
+        matches = [
+            {
+                **copy.deepcopy(self.match),
+                "id": key,
+                "match": key,
+                "date": day,
+                "time": time,
+                "priority": priority,
+            }
+            for key, day, time, priority in times
+        ]
+        payload["view"]["matches"] = matches
+        payload["monitor"]["watch"]["matches"] = matches
+        with (
+            patch("streamlit_panel.api_client.ApiClient", FakeApi),
+            patch.object(FakeApi, "monitor", return_value=payload),
+        ):
+            app = AppTest.from_file(
+                str(Path(__file__).with_name("streamlit_app.py")), default_timeout=20
+            )
+            app.session_state["auth_cookie"] = "test-cookie"
+            app.session_state["user"] = {"id": "operator-test"}
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertEqual(score_table(app)["Utakmica"].tolist(), ["D", "E", "B", "A", "C"])
+            app.selectbox(key="kickoff_sort").set_value("Najkasnije prvo").run()
+            self.assertFalse(app.exception)
+            self.assertEqual(score_table(app)["Utakmica"].tolist(), ["C", "A", "B", "E", "D"])
+            app.run()
+            self.assertEqual(app.selectbox(key="kickoff_sort").value, "Najkasnije prvo")
+            self.assertEqual(score_table(app)["Utakmica"].tolist(), ["C", "A", "B", "E", "D"])
+            self.assertEqual(
+                [match["id"] for match in payload["monitor"]["watch"]["matches"]],
+                ["A", "B", "C", "D", "E"],
+            )
+
     def test_paging_filter_and_search_still_work_with_the_compact_table(self):
         payload = FakeApi().monitor()
         matches = [
@@ -187,6 +232,7 @@ class ScoreDisplayTests(unittest.TestCase):
                 **copy.deepcopy(self.match),
                 "id": str(index),
                 "match": "Team " + str(index) + " – Guest",
+                "time": f"{index // 60:02d}:{index % 60:02d}",
             }
             for index in range(121)
         ]
@@ -208,6 +254,11 @@ class ScoreDisplayTests(unittest.TestCase):
             app.number_input(key="monitor_page_number").set_value(2).run()
             self.assertFalse(app.exception)
             self.assertEqual(len(score_table(app)), 21)
+            app.selectbox(key="kickoff_sort").set_value("Najkasnije prvo").run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.number_input(key="monitor_page_number").value, 1)
+            self.assertEqual(score_table(app).iloc[0]["Utakmica"], "Team 120 – Guest")
+            app.selectbox(key="kickoff_sort").set_value("Najranije prvo").run()
             app.radio(key="result_filter").set_value("Usaglašeno").run()
             self.assertFalse(app.exception)
             self.assertEqual(score_table(app).iloc[0]["Utakmica"], "Team 120 – Guest")

@@ -17,6 +17,8 @@ Novi uvoz zamenjuje tvoj prethodni aktivni spisak. Spisak drugog operatera se ne
 
 Spisak može imati do **1.000 utakmica**. Pregled prikazuje do 100 po strani; provera uvek obuhvata ceo spisak. Promeni **Stranu pregleda** ili upotrebi pretragu.
 
+U polju **Sortiraj po početku** izaberi **Najranije prvo** ili **Najkasnije prvo**. Redosled prati datum i vreme početka za ceo filtrirani spisak, pre podele na strane. Promena smera vraća pregled na prvu stranu.
+
 ## 2. Kako se mečevi povezuju i rezultati porede
 
 - Meč se povezuje po domaćinu, gostu, datumu i vremenu početka. Redosled domaćina i gosta mora biti ispravan.
@@ -99,7 +101,7 @@ Kod slabijih ili bliskih poklapanja otvori detalje i pogledaj **Predloge poveziv
 
 ## 9. Starost internog unosa
 
-Na vrhu pregleda su neslaganja završenih mečeva, zatim live razlike, pa mečevi bez dovoljno podataka. Kolona **Interni unos** pokazuje starost kopiranog spiska; tačno vreme je u detaljima. Stari interni rezultat treba ponovo proveriti u internom programu.
+Pregled prati izabrani smer sortiranja po početku utakmice. Kolona **Interni unos** pokazuje starost kopiranog spiska; tačno vreme je u detaljima. Stari interni rezultat treba ponovo proveriti u internom programu.
 
 ## 10. Zvuk i promene rezultata
 
