@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ScoreGuard — Backoffice uvoz",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Prenosi već prikazane fudbalske mečeve iz izabranog Backoffice taba u prijavljeni ScoreGuard panel.",
   "permissions": ["activeTab", "scripting", "storage", "alarms"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],

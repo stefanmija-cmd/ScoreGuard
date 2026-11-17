@@ -828,6 +828,70 @@ test("conflicting Score 2 headers leave halftime unknown instead of selecting a 
   assert.equal(result.diagnostics.halftimeUnreadable, 1);
 });
 
+test("the supplied Lit Score 2 cell ignores comment markers and imports every displayed halftime", () => {
+  const comment = (text) => ({ nodeType: 8, nodeValue: text, textContent: text });
+  const text = (value) => ({ nodeType: 3, nodeValue: value, textContent: value });
+  const marker = "?lit$705630163$";
+  const samples = [
+    ["2", "1"],
+    ["0", "5"],
+    ["0", "0"],
+    ["10", "2"],
+  ];
+  const labels = fields.map((_, index) => (index === 9 ? "Score 2" : ""));
+  const header = cellGrid(
+    labels.map((label, index) => slottedCell(label, index, { tagName: "TH" })),
+  ).querySelectorAll()[0];
+  const rows = Array.from({ length: 12 }, (_, index) => {
+    const [home, away] = samples[index % samples.length];
+    const values = [...fields];
+    values[2] = String(72499 + index);
+    values[7] = "10";
+    values[8] = "6";
+    const cells = values.map((value, column) => slottedCell(value, column));
+    // Exact children of the supplied vaadin-grid-cell-content, including Lit comments.
+    cells[9] = slottedCell(
+      [
+        comment(""),
+        {
+          nodeType: 1,
+          tagName: "SPAN",
+          style: { fontWeight: "bold" },
+          childNodes: [comment(marker), text(home)],
+        },
+        text(":"),
+        {
+          nodeType: 1,
+          tagName: "SPAN",
+          style: { fontWeight: "normal" },
+          childNodes: [comment(marker), text(away)],
+        },
+      ],
+      9,
+    );
+    return cellGrid(cells).querySelectorAll()[0];
+  });
+  const result = capture([{ tagName: "TABLE", querySelectorAll: () => [header, ...rows] }]);
+  assert.equal(result.diagnostics.score2Headers, 1);
+  assert.equal(result.diagnostics.halftimeRead, 12);
+  assert.equal(result.diagnostics.halftimeUnreadable, 0);
+  assert.doesNotMatch(result.text, /lit\$705630163/);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  for (const [index, match] of imported.rows.entries())
+    assert.equal(match.ht, samples[index % samples.length].join(":"));
+});
+
+test("an invisible comment containing a score cannot supply a missing halftime", () => {
+  const cells = fields.map((value, index) => slottedCell(value, index));
+  cells[9] = slottedCell([{ nodeType: 8, nodeValue: "0:0", textContent: "0:0" }], 9);
+  const result = capture([cellGrid(cells)]);
+  assert.equal(result.diagnostics.halftimeMissing, 1);
+  assert.equal(parseNativeClipboard(result.text).rows[0].colonScore, null);
+});
+
 test("opening status restores a missing alarm without postponing an existing deadline", async (t) => {
   let now = Date.now();
   t.mock.method(Date, "now", () => now);

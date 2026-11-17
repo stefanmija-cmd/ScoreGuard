@@ -29,7 +29,7 @@
       window.postMessage(
         {
           type: "SG_CHROME_DATA",
-          relayVersion: "0.1.5",
+          relayVersion: "0.1.6",
           channel: value.channel,
           operator: value.operator,
           requestId: value.refresh === true ? value.requestId : "",
@@ -41,7 +41,7 @@
       window.postMessage(
         {
           type: "SG_CHROME_DATA",
-          relayVersion: "0.1.5",
+          relayVersion: "0.1.6",
           channel: value.channel,
           ok: false,
           error: "Ponovo povežite ScoreGuard tab u dodatku.",
@@ -52,6 +52,6 @@
       busy = false;
     }
   };
-  globalThis.__scoreguardRelay = { version: "0.1.5", listener };
+  globalThis.__scoreguardRelay = { version: "0.1.6", listener };
   window.addEventListener("message", listener);
 })();

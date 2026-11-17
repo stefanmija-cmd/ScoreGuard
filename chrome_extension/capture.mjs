@@ -85,7 +85,7 @@ export function captureSnapshot(selector = "", reportErrors = false) {
           if (element.shadowRoot) enqueue(element.shadowRoot, "shadow", false, true);
     }
     function composedText(node, visited = new Set(), depth = 0) {
-      if (!node || visited.has(node) || depth > 64) return "";
+      if (!node || node.nodeType === 8 || visited.has(node) || depth > 64) return "";
       visited.add(node);
       if (
         ["SCRIPT", "STYLE", "NOSCRIPT", "INPUT", "TEXTAREA"].includes(node.tagName) ||

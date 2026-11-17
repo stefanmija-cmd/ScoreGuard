@@ -46,7 +46,7 @@
       (value.operator && value.operator !== operator)
     )
       return;
-    if (value.relayVersion === "0.1.5") currentRelay = true;
+    if (value.relayVersion === "0.1.6") currentRelay = true;
     else if (currentRelay) return;
     const clock = value.status;
     const timing = clock

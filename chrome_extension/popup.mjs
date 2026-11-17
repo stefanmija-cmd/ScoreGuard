@@ -44,7 +44,7 @@ async function show() {
   if (state.diagnostics) {
     const d = state.diagnostics;
     $("diagnostics").textContent =
-      "Verzija: 0.1.5\nDokumenti: " +
+      "Verzija: 0.1.6\nDokumenti: " +
       d.documents +
       "\nShadow delovi: " +
       (d.shadowRoots || 0) +

@@ -1,6 +1,6 @@
 # ScoreGuard Chrome dodatak — početni test
 
-Aktuelna verzija je **0.1.5**. Kolona **Score 2** je rezultat poluvremena, a odvojene **Home / Away** kolone uz FT/HT su trenutni rezultat.
+Aktuelna verzija je **0.1.6**. Kolona **Score 2** je rezultat poluvremena, a odvojene **Home / Away** kolone uz FT/HT su trenutni rezultat.
 
 Dodatak čita samo već učitane fudbalske redove iz izabranog Backoffice taba. Ne poziva Backoffice API, ne osvežava stranicu, ne klikće po njoj i ne prelistava stranice. Čitanje DOM tabele ima mali lokalni trošak u pregledaču; ne stvara dodatne HTTP zahteve internom sistemu.
 
@@ -92,3 +92,9 @@ Preuzmi novi dodatak kroz **Chrome uvoz**, zameni fajlove postojeće fascikle, k
 Poluvreme se čita iz zaglavlja **Score 2 / Score2**. Podržano je i kada su dva broja zasebni elementi, a dvotačku prikazuje CSS. Trenutni rezultat ostaje iz dve kolone **Home / Away**. Primeri prikaza su **0:6 (0:5)** i **2:1 (2:0)**. Oznaka **Pause** prepoznaje se kao pauza na poluvremenu.
 
 Status dodatka prikazuje koliko je poluvremena pročitano, prazno ili neprepoznato. Prazno ili nejasno polje ne pretvara se u 0:0, a sam zapis bez separatora i bez dva odvojena broja ne nagađa se. Ako je poluvreme već 0:0, nule ostaju sačuvane. U prvom poluvremenu rezultat na poluvremenu još se ne potvrđuje. Minute golova se i dalje samo beleže.
+
+## Ažuriranje na 0.1.6 — komentari u Score 2 ćeliji
+
+HTML dostavljene Score 2 ćelije sadrži Lit komentare ispred brojeva. Dodatak ih sada preskače i čita samo prikazani rezultat. Regresioni test sa tom strukturom u prethodnoj verziji čita 0 od 12 poluvremena, a posle ispravke svih 12. Prazna ćelija sa komentarom koji liči na rezultat ostaje nepoznata.
+
+Posle **Manage app → Reboot app** preuzmi novi ZIP kroz **Chrome uvoz**, zameni fajlove postojeće fascikle i klikni **Reload** na `chrome://extensions`. Proveri oznaku **v0.1.6**, ponovo poveži oba taba, pročitaj i potvrdi spisak sa automatskim uvozom. Broj pročitanih poluvremena u prozoru dodatka treba da odgovara popunjenim Score 2 ćelijama.

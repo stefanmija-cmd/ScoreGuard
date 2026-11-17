@@ -14,7 +14,7 @@ from streamlit_panel.presentation import BELGRADE, SOURCE_NAMES, local_time, pre
 from streamlit_panel.api_client import ApiError
 
 _bridge = components.declare_component(
-    "scoreguard_chrome_bridge_v015", path=str(Path(__file__).with_name("chrome_component"))
+    "scoreguard_chrome_bridge_v016", path=str(Path(__file__).with_name("chrome_component"))
 )
 MAX_BYTES = 256000
 
@@ -186,7 +186,7 @@ def extension_zip():
 def render_receiver(api, operator, handle_error):
     channel = st.session_state.setdefault("chrome_channel", secrets.token_hex(24))
     packet = _bridge(
-        channel=channel, operator=operator, default=None, key="scoreguard_chrome_receiver_v015"
+        channel=channel, operator=operator, default=None, key="scoreguard_chrome_receiver_v016"
     )
     if st.session_state.get("chrome_notice"):
         st.caption(st.session_state["chrome_notice"])
