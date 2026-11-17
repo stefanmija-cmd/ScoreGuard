@@ -127,13 +127,51 @@ export class Monitor {
     }
     if (migrated) await this.store.save(this.watches);
   }
-  async configure(operator, config, { enabled = true, imported = false } = {}) {
+  async configure(operator, config, { enabled = true, imported = false, chromeCapture } = {}) {
     const watch = validateWatch(config),
       revision = watchRevision(watch),
       old = this.watches[operator];
+    if (chromeCapture !== undefined) {
+      const capturedAt = Date.parse(chromeCapture?.capturedAt),
+        age = this.clock() - capturedAt;
+      if (
+        !imported ||
+        typeof chromeCapture?.id !== "string" ||
+        !chromeCapture.id ||
+        chromeCapture.id.length > 100 ||
+        typeof chromeCapture.capturedAt !== "string" ||
+        typeof chromeCapture.automatic !== "boolean" ||
+        !Number.isFinite(capturedAt) ||
+        age < -30000 ||
+        age > 330000
+      )
+        throw Error(
+          "Neispravno ili zastarelo čitanje iz Chrome dodatka. Pročitajte tabelu ponovo.",
+        );
+      if (capturedAt < Date.parse(old?.chromeCapture?.capturedAt))
+        throw Error("Stari Chrome prenos ne može zameniti noviji spisak.");
+      if (
+        old?.chromeCapture?.id === chromeCapture.id &&
+        Date.parse(old.chromeCapture.capturedAt) === capturedAt
+      )
+        return this.snapshot(operator);
+      chromeCapture = {
+        id: chromeCapture.id,
+        capturedAt: new Date(capturedAt).toISOString(),
+        automatic: chromeCapture.automatic,
+      };
+    }
+    const syncWithImport = chromeCapture
+      ? chromeCapture.automatic
+      : !imported && old?.syncWithImport === true;
     if (!old && Object.keys(this.watches).length >= this.maxOperators)
       throw Error("Dostignut je maksimalan broj operatera.");
-    if (old?.revision === revision && old.enabled === enabled) {
+    if (
+      old?.revision === revision &&
+      old.enabled === enabled &&
+      old.syncWithImport === syncWithImport &&
+      !chromeCapture
+    ) {
       if (imported) {
         old.importedAt = new Date(this.clock()).toISOString();
         old.updatedAt = old.importedAt;
@@ -149,7 +187,10 @@ export class Monitor {
       revision,
       generation: ++this.generation,
       enabled,
-      lastResult: old?.revision === revision ? old.lastResult : null,
+      syncWithImport,
+      chromeCapture: chromeCapture || (!imported ? old?.chromeCapture : null) || null,
+      pendingImport: Boolean(chromeCapture),
+      lastResult: !chromeCapture && old?.revision === revision ? old.lastResult : null,
       checks: old?.checks || [],
       reviews: Object.fromEntries(
         Object.entries(old?.reviews || {}).filter(([id]) => watch.matches.some((m) => m.id === id)),
@@ -159,7 +200,8 @@ export class Monitor {
       running: false,
       nextCheckAt: enabled ? this.clock() : null,
       importedAt:
-        imported || inputChanged ? new Date(this.clock()).toISOString() : old?.importedAt || null,
+        chromeCapture?.capturedAt ||
+        (imported || inputChanged ? new Date(this.clock()).toISOString() : old?.importedAt || null),
       updatedAt: new Date(this.clock()).toISOString(),
     };
     await this.store.save(this.watches);
@@ -193,6 +235,7 @@ export class Monitor {
       watch: r.watch,
       revision: r.revision,
       enabled: r.enabled,
+      syncWithImport: r.syncWithImport === true,
       running: r.running,
       lastResult: r.lastResult,
       nextCheckAt: r.nextCheckAt ? new Date(r.nextCheckAt).toISOString() : null,
@@ -248,7 +291,9 @@ export class Monitor {
     const promise = (async () => {
       record.running = true;
       const start = this.clock();
-      record.nextCheckAt = record.enabled ? start + this.intervalMs : null;
+      record.pendingImport = false;
+      record.nextCheckAt =
+        record.enabled && !record.syncWithImport ? start + this.intervalMs : null;
       let result;
       try {
         result = await this.collector.collect(record.watch, {
@@ -314,12 +359,20 @@ export class Monitor {
     try {
       const due = Object.entries(this.watches).filter(
         ([operator, r]) =>
-          r.enabled && r.nextCheckAt <= this.clock() && !this.inflight.has(operator),
+          r.enabled &&
+          Number.isFinite(r.nextCheckAt) &&
+          r.nextCheckAt <= this.clock() &&
+          !this.inflight.has(operator),
       );
       for (const [operator] of due) {
         const current = this.watches[operator];
-        if (current?.enabled && current.nextCheckAt <= this.clock() && !this.inflight.has(operator))
-          await this.check(operator, { trigger: "scheduled" });
+        if (
+          current?.enabled &&
+          Number.isFinite(current.nextCheckAt) &&
+          current.nextCheckAt <= this.clock() &&
+          !this.inflight.has(operator)
+        )
+          await this.check(operator, { trigger: current.pendingImport ? "import" : "scheduled" });
       }
     } finally {
       this.ticking = false;

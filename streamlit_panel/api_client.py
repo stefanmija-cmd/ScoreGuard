@@ -98,10 +98,18 @@ class ApiClient:
             "/api/import/preview", "POST", {"text": text, "date": date, "format": format_name}
         ).json()
 
-    def configure(self, watch: dict, enabled: bool, imported: bool = False):
-        return self._request(
-            "/api/watch", "PUT", {**watch, "enabled": enabled, "imported": imported}
-        ).json()
+    def configure(
+        self,
+        watch: dict,
+        enabled: bool,
+        imported: bool = False,
+        *,
+        chrome_capture: dict | None = None,
+    ):
+        body = {**watch, "enabled": enabled, "imported": imported}
+        if chrome_capture is not None:
+            body["chromeCapture"] = chrome_capture
+        return self._request("/api/watch", "PUT", body).json()
 
     def check(self, watch: dict, enabled: bool):
         return self._request(

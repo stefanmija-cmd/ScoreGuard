@@ -208,3 +208,7 @@ Obaveštenje o Cloud režimu ima veći razmak ispod Streamlit zaglavlja i na mob
 ## Chrome dodatak za Backoffice uvoz
 
 Posle objavljivanja cele nove verzije prijavite se i otvorite **Chrome uvoz**. Tamo se preuzima dodatak i prikazuju koraci za povezivanje otvorenog Backoffice taba sa prijavljenim ScoreGuard panelom. [Detaljno uputstvo](chrome_extension/README.md). Dodatni server, pristupne lozinke u dodatku i javno otvaranje lokalnog API-ja nisu potrebni.
+
+Automatski Chrome uvoz i provera izvora sada koriste jedan ciklus: novi potvrđeni snimak odmah zakazuje proveru svih izabranih izvora, i kada su interni rezultati nepromenjeni. Flashscore i Futbol24 preuzimaju se paralelno; poređenje se objavljuje po završetku oba zahteva, uz jasno neproveren nedostupan izvor. Ponovljena isporuka istog snimka ne ponavlja proveru. Uobičajeni petominutni keš ne odlaže ovu proveru; zahtevi različitih operatera unutar 15 sekundi i dalje dele preuzimanje sa stvarnim vremenom izvora.
+
+Posle **Manage app → Reboot app** ponovo uključite prijem i potvrdite spisak sa automatskim uvozom i uključenim proverama izvora. Dodatak v0.1.3 ne zahteva zamenu. Bez novog prihvaćenog uvoza usklađeni režim čeka sledeće čitanje; oba taba moraju ostati otvorena, operater prijavljen i računar budan. Pauza provera izvora se poštuje. **Proveri sada** ostaje dostupan. Novi ručno nalepljeni spisak vraća uobičajen nezavisan raspored izvora na pet minuta.

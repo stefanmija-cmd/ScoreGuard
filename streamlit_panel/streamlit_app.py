@@ -268,6 +268,15 @@ def monitor_page():
         st.caption("Poslednja provera: " + local_time(last.get("checkedAt"), True))
         if snapshot.get("running"):
             st.info("Serverska provera je u toku.")
+        elif snapshot.get("enabled") and snapshot.get("syncWithImport"):
+            st.caption(
+                "Usklađeno sa Chrome dodatkom · "
+                + (
+                    "spisak je primljen; provera izvora uskoro počinje."
+                    if snapshot.get("nextCheckAt")
+                    else "čeka se sledeće čitanje internog spiska."
+                )
+            )
         elif snapshot.get("enabled"):
             st.caption(
                 "Automatika uključena · sledeća provera: " + local_time(snapshot.get("nextCheckAt"))
@@ -465,7 +474,10 @@ def history_page():
         {
             "Vreme": local_time(check.get("at"), True),
             "Operater": check["operator"],
-            "Vrsta": "Automatska provera" if check["trigger"] == "scheduled" else "Ručna provera",
+            "Vrsta": {
+                "scheduled": "Automatska provera",
+                "import": "Provera nakon Chrome uvoza",
+            }.get(check["trigger"], "Ručna provera"),
             "Izvori": " · ".join(h.get("message", "") for h in check.get("health", {}).values()),
         }
         for check in snapshot.get("checks", [])

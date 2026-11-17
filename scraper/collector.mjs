@@ -37,7 +37,7 @@ export function createCollector({
     const key = source + ":" + date,
       entry = cache.get(key),
       age = entry ? clock() - entry.fetchedAt : Infinity;
-    const reuse = trigger === "manual" ? manualMinIntervalMs : cacheMs;
+    const reuse = ["manual", "import"].includes(trigger) ? manualMinIntervalMs : cacheMs;
     if (entry && age >= 0 && age < reuse && clock() - entry.dataFreshAt < FRESH_MS) {
       stats.cacheHits++;
       return { ...entry, cacheHit: true };

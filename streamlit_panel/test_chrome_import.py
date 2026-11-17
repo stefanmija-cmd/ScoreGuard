@@ -101,11 +101,17 @@ class ChromeImportTests(unittest.TestCase):
     def test_approved_score_change_imports_into_current_operator_and_preserves_paused_checks(self):
         self.arm()
         self.api.preview.return_value["rows"] = [fixture("2:1")]
-        self.receive()
+        value = packet(captureId="approved-change")
+        self.receive(value)
         self.api.configure.assert_called_once_with(
             {"date": "2026-11-11", "sources": ["flash"], "matches": [fixture("2:1")]},
             False,
             imported=True,
+            chrome_capture={
+                "id": "approved-change",
+                "capturedAt": value["capturedAt"],
+                "automatic": True,
+            },
         )
         self.assertNotIn("chrome_pending", self.session)
 
@@ -139,7 +145,14 @@ class ChromeImportTests(unittest.TestCase):
         self.assertTrue(self.receive(value))
         self.assertFalse(self.receive(value))
         self.api.configure.assert_called_once_with(
-            self.api.monitor.return_value["monitor"]["watch"], False, imported=True
+            self.api.monitor.return_value["monitor"]["watch"],
+            False,
+            imported=True,
+            chrome_capture={
+                "id": value["capturedAt"],
+                "capturedAt": value["capturedAt"],
+                "automatic": True,
+            },
         )
         self.assertEqual(self.session["chrome_last_import"], value["capturedAt"])
         newer = packet(
@@ -149,6 +162,27 @@ class ChromeImportTests(unittest.TestCase):
         self.assertTrue(self.receive(newer))
         self.assertEqual(self.api.configure.call_count, 2)
         self.assertEqual(self.session["chrome_last_import"], newer["capturedAt"])
+
+    def test_unchanged_approved_read_requests_one_common_check_for_both_selected_sources(self):
+        self.arm()
+        snapshot = self.api.monitor.return_value["monitor"]
+        snapshot["enabled"] = True
+        snapshot["watch"]["sources"] = ["flash", "f24"]
+        value = packet(captureId="common-cycle")
+        self.assertTrue(self.receive(value))
+        self.api.configure.assert_called_once_with(
+            snapshot["watch"],
+            True,
+            imported=True,
+            chrome_capture={
+                "id": "common-cycle",
+                "capturedAt": value["capturedAt"],
+                "automatic": True,
+            },
+        )
+        self.assertIn("pokreće se automatski", self.session["chrome_notice"])
+        self.assertFalse(self.receive(value))
+        self.api.configure.assert_called_once()
 
     def test_manual_reread_of_same_content_can_refresh_an_unconfirmed_preview(self):
         first = packet()
@@ -288,9 +322,44 @@ class ChromeImportTests(unittest.TestCase):
             app.button(key="chrome_confirm").click().run()
             self.assertFalse(app.exception)
             api.configure.assert_called_once()
+            self.assertTrue(api.configure.call_args.kwargs["chrome_capture"]["automatic"])
+            self.assertEqual(
+                api.configure.call_args.kwargs["chrome_capture"]["capturedAt"],
+                app.session_state["chrome_last_import"],
+            )
             self.assertIn("chrome_auto_settings", app.session_state)
             app.checkbox(key="chrome_receive").uncheck().run()
             self.assertNotIn("chrome_auto_settings", app.session_state)
+
+    def test_monitor_explains_waiting_for_the_next_chrome_read_and_keeps_manual_check_available(
+        self,
+    ):
+        api = self.api
+        api.me.return_value = {
+            "id": OPERATOR,
+            "name": "Test",
+            "role": "operator",
+            "authenticated": True,
+        }
+        payload = FakeApi().monitor()
+        payload["monitor"].update(enabled=True, syncWithImport=True, nextCheckAt=None)
+        api.monitor.return_value = payload
+        with patch("streamlit_panel.api_client.ApiClient", return_value=api):
+            app = AppTest.from_file(
+                str(Path(__file__).with_name("streamlit_app.py")), default_timeout=20
+            )
+            app.session_state["auth_cookie"] = "test-cookie"
+            app.session_state["user"] = {"id": OPERATOR}
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertTrue(
+                any("čeka se sledeće čitanje" in caption.value for caption in app.caption)
+            )
+            check_button = next(button for button in app.button if button.label == "Proveri sada")
+            self.assertFalse(check_button.disabled)
+            check_button.click().run()
+            self.assertFalse(app.exception)
+            api.check.assert_called_once_with(payload["monitor"]["watch"], True)
 
 
 if __name__ == "__main__":

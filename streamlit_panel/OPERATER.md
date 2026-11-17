@@ -35,11 +35,13 @@ Ako meč nije pronađen, proveri nazive klubova, datum, vreme i redosled timova.
 
 ## 3. Provera na 5 minuta i osvežavanje pregleda
 
-**Automatska provera rezultata radi na svakih 5 minuta (300 sekundi)** kada je automatika uključena i aplikacija aktivna. U pregledu vidiš vreme poslednje i sledeće provere.
+**Automatska provera rezultata radi na svakih 5 minuta (300 sekundi)** kada je automatika uključena i aplikacija aktivna. Za ručno nalepljen spisak u pregledu vidiš vreme poslednje i sledeće provere.
+
+**Kod automatskog Chrome uvoza koristi se jedan ciklus:** dodatak pročita interni spisak, a novi potvrđeni uvoz odmah pokreće proveru izabranih izvora. To važi i kada se interni rezultat nije promenio. Flashscore i Futbol24 preuzimaju se paralelno, a poređenje se prikazuje kada se oba zahteva završe ili prijave grešku. Do tada prethodni rezultati izvora nisu potvrda za novi unos. Ako novi spisak ne stigne, aplikacija prikazuje da čeka sledeće čitanje. Oba taba moraju ostati otvorena, računar budan i operater prijavljen.
 
 **Pregled na ekranu osvežava se na svakih 15 sekundi.** Tada prikazuje već preuzete podatke i status provere. Za novu proveru pre sledećeg termina klikni **Proveri sada**.
 
-Operateri dele preuzete podatke izvora. Ručni zahtevi u razmaku do **15 sekundi** mogu koristiti isto preuzimanje. Vreme stvarnog preuzimanja vidiš u detaljima i ono se ne podmlađuje osvežavanjem ekrana.
+Operateri dele preuzete podatke izvora. Ručni zahtevi i provere pokrenute uvozom u razmaku do **15 sekundi** mogu koristiti isto preuzimanje. Vreme stvarnog preuzimanja vidiš u detaljima i ono se ne podmlađuje osvežavanjem ekrana. Sajtovi mogu objaviti rezultat sa sopstvenim kašnjenjem.
 
 Ako izvor odbije pristup ili zatraži pauzu, aplikacija prikazuje razlog i poštuje tu pauzu. Ponavljanje klika ne uklanja blokadu izvora.
 
@@ -79,7 +81,7 @@ U **Podešavanjima** možeš promeniti izvore i uključiti ili pauzirati automat
 
 U **Istoriji aktivnosti** vidiš prethodne ručne i automatske provere, vreme i operatera. Istoriju provera možeš preuzeti kao CSV.
 
-Na kraju rada klikni **Odjavi se**. Sama odjava i zatvaranje kartice ne pauziraju uključene provere dok aplikacija radi. Ako želiš da zaustaviš automatski nadzor svog spiska, prvo isključi automatiku u **Podešavanjima** i sačuvaj izbor.
+Na kraju rada klikni **Odjavi se**. Kod ručno nalepljenog spiska odjava i zatvaranje kartice ne pauziraju uključene provere dok aplikacija radi. U režimu usklađenom sa Chrome dodatkom bez novog uvoza nema novog automatskog ciklusa. Ako želiš da isključiš automatski nadzor svog spiska, prvo isključi automatiku u **Podešavanjima** i sačuvaj izbor.
 
 ## 7. Povezivanje različitih naziva klubova
 
@@ -131,9 +133,9 @@ Na stranici **Chrome uvoz** preuzmi dodatak i prati prikazane korake. Poveži ot
 
 Za automatski rad uključi čitanje na pet minuta u dodatku i **Automatski uvozi naredne promene ovog spiska** pri potvrdi u ScoreGuard-u. Dodatak čita već učitanu tabelu: ne osvežava interni program i ne prelistava stranice. Oba taba moraju ostati otvorena. Broj prenetih mečeva proveri u pregledu; nisu obuhvaćeni redovi koje Backoffice još nije učitao.
 
-Promena rezultata istih mečeva može da se uveze automatski. Promena skupa mečeva, timova, datuma ili vremena početka pauzira uvoz do novog pregleda. Za trenutno čitanje klikni **Preuzmi iz Backoffice taba** u levom meniju, pa **Proveri sada** u pregledu rezultata. Provera javnih izvora i čitanje Backoffice-a imaju zasebne rasporede.
+Promena rezultata istih mečeva može da se uveze automatski. Promena skupa mečeva, timova, datuma ili vremena početka pauzira uvoz do novog pregleda. Za trenutno čitanje klikni **Preuzmi iz Backoffice taba** u levom meniju. Posle prihvaćenog uvoza provera izabranih izvora pokreće se automatski ako su provere uključene. **Proveri sada** u pregledu ostaje dostupan za zasebnu ručnu proveru izvora.
 
-Posle odjave prijem treba ponovo uključiti i potvrditi spisak. Opcija **Pauziraj automatski uvoz** zaustavlja zamenu internog spiska; postojeće provere izvora ostaju u stanju koje si izabrao. Isključivanje **Primaj iz Chrome dodatka** takođe zaustavlja automatski uvoz. Loša ili prazna tabela ne briše postojeći spisak.
+Posle odjave prijem treba ponovo uključiti i potvrditi spisak. Opcija **Pauziraj automatski uvoz** i isključivanje **Primaj iz Chrome dodatka** zaustavljaju nove uvoze. U usklađenom režimu tada nema novih automatskih ciklusa; ručna provera izvora ostaje dostupna. Loša ili prazna tabela ne briše postojeći spisak. Novi ručno nalepljeni uvoz vraća uobičajene provere izvora na pet minuta, prema izabranoj automatici.
 
 ## 14. Provera automatskog Chrome uvoza
 

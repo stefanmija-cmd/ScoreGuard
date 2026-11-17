@@ -125,6 +125,39 @@ test("manual checks coalesce for fifteen seconds then fetch new results", async 
   assert.equal(calls, 2);
 });
 
+test("Chrome-triggered checks refresh both feeds and twelve operators share the new requests", async () => {
+  let time = now,
+    score = "1:0";
+  const calls = { flash: 0, f24: 0 };
+  const provider = (source) => async () => {
+    calls[source]++;
+    return [{ ...event, current: score, regularTime: score }];
+  };
+  const collector = createCollector({
+    clock: () => time,
+    providers: { flash: provider("flash"), f24: provider("f24") },
+  });
+  const exact = {
+    ...watch,
+    sources: ["flash", "f24"],
+    matches: [{ ...match, match: "Colombe – Victoria United" }],
+  };
+  await collector.collect(exact);
+  score = "2:0";
+  time += 20000;
+  const results = await Promise.all(
+    Array.from({ length: 12 }, () => collector.collect(exact, { trigger: "import" })),
+  );
+  assert.deepEqual(calls, { flash: 2, f24: 2 });
+  for (const result of results)
+    for (const source of exact.sources) {
+      assert.equal(result.results[0].refs[source].score, "2:0");
+      assert.equal(Date.parse(result.results[0].refs[source].checkedAt), time);
+    }
+  await collector.collect(exact, { trigger: "import" });
+  assert.deepEqual(calls, { flash: 2, f24: 2 });
+});
+
 test("upstream cache age and reuse cannot keep an old result green", async () => {
   let time = now,
     calls = 0;

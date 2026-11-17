@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { createAccount } from "../auth/core.mjs";
 import { startCloudService } from "../cloud_runtime/server.mjs";
+import { createCollector } from "../scraper/collector.mjs";
 
 const password = "Cloud-service-test-password-only-123!";
 const accounts = {
@@ -174,6 +175,99 @@ test("Cloud comparisons use a 90-second request budget and leave other API reque
     assert.equal((await response.json()).results[0].refs.flash.state, "verified");
   } finally {
     release();
+    if (pending) await pending;
+    if (runtime) await runtime.close();
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("authenticated Chrome imports publish both source responses together and never retain a failed source", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "sg-cloud-import-sync-"));
+  let runtime,
+    release,
+    pending,
+    failF24 = false,
+    now = Date.now();
+  const calls = { flash: 0, f24: 0 };
+  const events = [
+    {
+      id: "source-one",
+      home: "Zamora",
+      away: "Atletico Barinas",
+      league: "Cup",
+      startTimestamp: Date.parse("2026-11-11T20:30:00Z") / 1000,
+      state: "finished",
+      phase: "finished",
+      current: "1:0",
+      regularTime: "1:0",
+      halfTime: "0:0",
+    },
+  ];
+  const feeds = createCollector({
+    clock: () => now,
+    providers: {
+      flash: async () => {
+        calls.flash++;
+        return events;
+      },
+      f24: async () => {
+        calls.f24++;
+        if (failF24) throw Object.assign(Error("Controlled source outage"), { code: "BLOCKED" });
+        await new Promise((resolve) => (release = resolve));
+        return events;
+      },
+    },
+  });
+  try {
+    runtime = await startCloudService({ directory, accounts, collector: feeds });
+    clearInterval(runtime.monitor.timer);
+    runtime.monitor.timer = null;
+    runtime.monitor.clock = () => now;
+    const call = api(runtime),
+      cookie = await signIn(call, "Stefan"),
+      other = await signIn(call, "Milos");
+    const body = {
+      ...watch,
+      sources: ["flash", "f24"],
+      enabled: true,
+      imported: true,
+      chromeCapture: { id: "first", capturedAt: new Date(now).toISOString(), automatic: true },
+    };
+    const saved = await call("/api/watch", { cookie, method: "PUT", body });
+    assert.equal(saved.status, 200);
+    assert.equal((await saved.json()).monitor.syncWithImport, true);
+    pending = runtime.monitor.tick();
+    assert.deepEqual(calls, { flash: 1, f24: 1 });
+    let state = (await (await call("/api/monitor", { cookie })).json()).monitor;
+    assert.equal(state.running, true);
+    assert.equal(state.lastResult, null, "a fast source cannot publish half of a comparison");
+    release();
+    await pending;
+    state = (await (await call("/api/monitor", { cookie })).json()).monitor;
+    assert.equal(state.lastResult.trigger, "import");
+    for (const source of body.sources)
+      assert.equal(state.lastResult.results[0].refs[source].state, "verified");
+    assert.equal(state.nextCheckAt, null);
+    now += 300000;
+    await runtime.monitor.tick();
+    assert.deepEqual(calls, { flash: 1, f24: 1 });
+    failF24 = true;
+    body.chromeCapture = { id: "second", capturedAt: new Date(now).toISOString(), automatic: true };
+    const imported = await call("/api/watch", { cookie, method: "PUT", body });
+    assert.equal(imported.status, 200);
+    assert.equal((await imported.json()).monitor.lastResult, null);
+    await runtime.monitor.tick();
+    state = (await (await call("/api/monitor", { cookie })).json()).monitor;
+    assert.equal(state.lastResult.results[0].refs.flash.state, "verified");
+    assert.equal(state.lastResult.results[0].refs.f24.state, "unverified");
+    assert.equal(state.lastResult.results[0].refs.f24.score, undefined);
+    assert.deepEqual(calls, { flash: 2, f24: 2 });
+    await call("/api/watch", { cookie, method: "PUT", body });
+    await runtime.monitor.tick();
+    assert.deepEqual(calls, { flash: 2, f24: 2 });
+    assert.equal((await (await call("/api/monitor", { cookie: other })).json()).monitor, null);
+  } finally {
+    release?.();
     if (pending) await pending;
     if (runtime) await runtime.close();
     await fs.rm(directory, { recursive: true, force: true });

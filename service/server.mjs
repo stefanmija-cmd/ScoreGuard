@@ -77,6 +77,8 @@ export function createService({ monitor, token, webApp = null }) {
           }
           const result = await monitor.configure(operator, body, {
             enabled: body.enabled !== false,
+            imported: body.imported === true,
+            chromeCapture: body.chromeCapture,
           });
           return send(200, { monitor: result });
         }

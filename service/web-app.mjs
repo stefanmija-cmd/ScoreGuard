@@ -482,6 +482,7 @@ export function createWebApp({
             monitor: await monitor.configure(user.id, watch, {
               enabled: raw.enabled !== false,
               imported: raw.imported === true,
+              chromeCapture: raw.chromeCapture,
             }),
             background: true,
           });

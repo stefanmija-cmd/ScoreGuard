@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import subprocess
@@ -80,6 +81,28 @@ class CloudRuntimeTests(unittest.TestCase):
             {"date": "2026-11-11", "sources": ["flash"], "matches": preview["rows"]}, False
         )
         self.assertEqual(stefan.monitor()["monitor"]["watch"]["matches"][0]["internalId"], "72499")
+        capture = {
+            "id": "runtime-import",
+            "capturedAt": datetime.now(timezone.utc).isoformat(),
+            "automatic": True,
+        }
+        synced = stefan.configure(
+            {"date": "2026-11-11", "sources": ["flash", "f24"], "matches": preview["rows"]},
+            False,
+            imported=True,
+            chrome_capture=capture,
+        )["monitor"]
+        self.assertTrue(synced["syncWithImport"])
+        self.assertFalse(synced["enabled"])
+        self.assertIsNone(synced["lastResult"])
+        self.assertEqual(synced["watch"]["sources"], ["flash", "f24"])
+        duplicate = stefan.configure(
+            synced["watch"],
+            False,
+            imported=True,
+            chrome_capture=capture,
+        )["monitor"]
+        self.assertEqual(duplicate["importedAt"], synced["importedAt"])
         cookie, user = ApiClient().login("milos", PASSWORD)
         self.assertIsNone(ApiClient(cookie, user["id"]).monitor()["monitor"])
         with self.assertRaises(ApiError) as caught:

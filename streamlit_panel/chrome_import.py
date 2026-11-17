@@ -71,6 +71,14 @@ def result_fingerprint(rows):
     return hashlib.sha256(json.dumps(values, ensure_ascii=False).encode()).hexdigest()
 
 
+def capture_details(packet, automatic):
+    return {
+        "id": packet.get("captureId") or packet["capturedAt"],
+        "capturedAt": packet["capturedAt"],
+        "automatic": automatic,
+    }
+
+
 def receive_packet(packet, api, operator, channel, session, now=None):
     delivery_id = (
         str(packet.get("id", ""))
@@ -140,13 +148,23 @@ def receive_packet(packet, api, operator, channel, session, now=None):
         imported_watch = {"date": base_date, "sources": watch["sources"], "matches": rows}
     else:
         imported_watch = watch
-    api.configure(imported_watch, snapshot.get("enabled", False), imported=True)
+    api.configure(
+        imported_watch,
+        snapshot.get("enabled", False),
+        imported=True,
+        chrome_capture=capture_details(packet, True),
+    )
     session["chrome_applied_fingerprint"] = fingerprint
     session["chrome_last_import"] = packet["capturedAt"]
     session["chrome_notice"] = (
         "Ažurirano iz otvorenog Backoffice taba: " + str(len(rows)) + " mečeva."
         if changed
         else "Spisak je ponovo pročitan i uvezen; rezultati se nisu promenili."
+    )
+    session["chrome_notice"] += (
+        " Provera izabranih izvora pokreće se automatski."
+        if snapshot.get("enabled")
+        else " Provere izvora su pauzirane."
     )
     session.pop("chrome_pending", None)
     session["chrome_received_id"] = delivery_id
@@ -214,10 +232,17 @@ def render_chrome_import(api, handle_error):
         return
     if snapshot.get("watch"):
         if snapshot.get("enabled"):
-            st.caption("Automatska provera Flashscore/Futbol24 rezultata je uključena.")
+            st.caption(
+                "Automatska provera Flashscore/Futbol24 rezultata je uključena."
+                + (
+                    " Svaki novi uvoz iz dodatka pokreće zajedničku proveru izabranih izvora."
+                    if snapshot.get("syncWithImport")
+                    else ""
+                )
+            )
         else:
             st.warning(
-                "Uvoz internog spiska i provera rezultata su odvojeni. Provere izvora su trenutno pauzirane; zato rezultati mogu ostati „Nije provereno“."
+                "Provere izvora su trenutno pauzirane; zato rezultati mogu ostati „Nije provereno“. Uključite ih za proveru nakon uvoza."
             )
             if st.button("Uključi provere izvora na 5 minuta", key="chrome_enable_checks"):
                 try:
@@ -229,6 +254,9 @@ def render_chrome_import(api, handle_error):
         st.info(st.session_state["chrome_notice"])
     if st.session_state.get("chrome_auto_settings"):
         st.success("Automatski uvoz promena potvrđenog spiska je uključen.")
+        st.caption(
+            "Redosled na svakih 5 minuta: dodatak čita interni spisak, aplikacija preuzima izabrane izvore, pa zajedno prikazuje rezultate. Ako nema novog uvoza, čeka se sledeće čitanje; Proveri sada ostaje dostupan."
+        )
         st.caption(
             "Poslednje uspešno čitanje i uvoz: "
             + local_time(st.session_state.get("chrome_last_import"), True)
@@ -301,6 +329,7 @@ def render_chrome_import(api, handle_error):
                 {"date": base_date.isoformat(), "sources": sources, "matches": rows},
                 enabled,
                 imported=True,
+                chrome_capture=capture_details(pending["packet"], automatic),
             )
             st.session_state["chrome_applied_fingerprint"] = result_fingerprint(rows)
             st.session_state["chrome_base_date"] = base_date.isoformat()
@@ -314,7 +343,9 @@ def render_chrome_import(api, handle_error):
                 st.session_state.pop("chrome_auto_settings", None)
             st.session_state.pop("chrome_pending", None)
             st.session_state["chrome_notice"] = (
-                "Spisak je uvezen. Otvorite Pregled mečeva i po potrebi kliknite Proveri sada."
+                "Spisak je uvezen. Provera izabranih izvora pokreće se automatski."
+                if enabled
+                else "Spisak je uvezen. Provere izvora su pauzirane; Proveri sada je dostupan."
             )
             st.success(st.session_state["chrome_notice"])
     except ValueError as error:
