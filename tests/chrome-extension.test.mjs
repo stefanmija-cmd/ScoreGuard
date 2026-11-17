@@ -30,10 +30,10 @@ function table(rows = [fields]) {
       })),
   };
 }
-function capture(tables, selector = "") {
+function capture(tables, selector = "", reportErrors = false) {
   const document = { querySelectorAll: () => tables };
   return vm.runInNewContext(
-    "(" + captureSnapshot.toString() + ")(" + JSON.stringify(selector) + ")",
+    "(" + captureSnapshot.toString() + ")(" + JSON.stringify(selector) + "," + reportErrors + ")",
     { document },
   );
 }
@@ -52,7 +52,10 @@ test("passive capture serializes only documented football cells and never loads 
   assert.equal(imported.rows[0].expectedStatus, "second_half");
 });
 test("passive capture refuses ambiguous tables, broken football rows and whole-page selectors", () => {
-  assert.throws(() => capture([table(), table()]), /više tabela/);
+  assert.throws(
+    () => capture([table(), table([[...fields.slice(0, 2), "99999", ...fields.slice(3)]])]),
+    /više tabela/,
+  );
   assert.throws(
     () => capture([table([["F", "Liga", "bad-id", "A", "B", "sre 20:00"]])]),
     /očekivane kolone/,
@@ -65,7 +68,7 @@ test("passive capture refuses oversized lists instead of silently truncating", (
 });
 
 let serial = 0;
-async function worker(settings = {}) {
+async function worker(settings = {}, injectedResult) {
   const local = { "scoreguard-config": settings },
     session = {},
     events = {};
@@ -114,7 +117,8 @@ async function worker(settings = {}) {
       executeScript: async (args) => {
         if (args.func) {
           reads++;
-          return [{ result: capture([table()]) }];
+          assert.equal(args.args[1], true);
+          return [{ result: injectedResult === undefined ? capture([table()]) : injectedResult }];
         }
         return [];
       },
@@ -267,4 +271,106 @@ test("navigating away from the bound Backoffice page blocks capture and hides ca
   await assert.rejects(runtime.handle({ ...pull, refresh: true }, bridge), /tab je promenjen/);
   await assert.rejects(runtime.handle(pull, bridge), /tab je promenjen/);
   assert.equal(runtime.reads(), 0);
+});
+
+test("nested copies and subset tables identify one complete match list", () => {
+  const second = [...fields];
+  second[2] = "72500";
+  const result = capture([table([fields, second]), table(), table([fields, second])]);
+  assert.equal(result.count, 2);
+  assert.equal(result.diagnostics.candidates, 2);
+});
+test("visible copies with conflicting scores remain ambiguous", () => {
+  const conflicting = [...fields];
+  conflicting[8] = "1";
+  assert.throws(() => capture([table(), table([conflicting])]), /više tabela/);
+});
+test("grid components and a leading selection column preserve the documented format", () => {
+  const grid = table([["", ...fields]]);
+  grid.tagName = "DIV";
+  const result = capture([grid]);
+  assert.equal(result.diagnostics.grids, 1);
+  assert.equal(result.text, fields.slice(0, 12).join("\t"));
+});
+test("ARIA grid cells are restored to column order", () => {
+  const cells = fields
+    .map((innerText, index) => ({
+      innerText,
+      getAttribute: () => String(index + 1),
+    }))
+    .reverse();
+  const grid = {
+    tagName: "DIV",
+    querySelectorAll: () => [
+      {
+        getClientRects: () => [{}],
+        querySelectorAll: () => cells,
+      },
+    ],
+  };
+  assert.equal(capture([grid]).text, fields.slice(0, 12).join("\t"));
+});
+test("same-origin loaded frames and open shadow roots need no additional requests", () => {
+  const gridDocument = {
+    querySelectorAll: (selector) =>
+      selector === "*" || selector === "iframe, frame" ? [] : [table()],
+  };
+  for (const useFrame of [true, false]) {
+    const document = {
+      querySelectorAll: (selector) =>
+        selector === "iframe, frame"
+          ? useFrame
+            ? [{ tagName: "IFRAME", contentDocument: gridDocument }]
+            : []
+          : selector === "*"
+          ? useFrame
+            ? []
+            : [{ shadowRoot: gridDocument }]
+          : [],
+    };
+    const result = vm.runInNewContext("(" + captureSnapshot.toString() + ")()", { document });
+    assert.equal(result.count, 1);
+    assert.equal(result.diagnostics.documents, 2);
+  }
+});
+test("unavailable frames produce a structured error with counts only", () => {
+  const document = {
+    querySelectorAll: (selector) =>
+      selector === "iframe, frame"
+        ? [
+            {
+              tagName: "IFRAME",
+              get contentDocument() {
+                throw Error("cross-origin");
+              },
+            },
+          ]
+        : [],
+  };
+  const result = vm.runInNewContext("(" + captureSnapshot.toString() + ")('',true)", { document });
+  assert.match(result.error, /okvir/);
+  assert.equal(result.diagnostics.inaccessibleFrames, 1);
+  assert.equal(result.text, undefined);
+});
+test("injected extraction failures survive Chrome serialization", async () => {
+  const failure = capture(
+    [table([["F", "private league", "bad-id", "private home", "private away", "sre 20:00"]])],
+    "",
+    true,
+  );
+  assert.match(failure.error, /očekivane kolone/);
+  assert.equal(failure.text, undefined);
+  assert.doesNotMatch(JSON.stringify(failure), /private (league|home|away)/);
+  const runtime = await worker(settings(), failure);
+  await assert.rejects(runtime.handle({ type: "capture" }, popup), /očekivane kolone/);
+  const state = await runtime.handle({ type: "state" }, popup);
+  assert.equal(state.error, failure.error);
+  assert.equal(state.diagnostics.footballRows, 1);
+  assert.equal(runtime.session["scoreguard-snapshot"], undefined);
+});
+test("extraction errors do not return a previously cached snapshot", async () => {
+  const runtime = await worker(settings(), capture([], "", true));
+  runtime.session["scoreguard-snapshot"] = { text: "old data" };
+  await assert.rejects(runtime.handle({ ...pull, refresh: true }, bridge), /Nema prepoznatih/);
+  await assert.rejects(runtime.handle(pull, bridge), /Nema prepoznatih/);
 });

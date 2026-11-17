@@ -50,11 +50,15 @@ async function capture() {
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: captureSnapshot,
-      args: [settings.selector || ""],
+      args: [settings.selector || "", true],
     });
     const value = results[0]?.result;
+    await chrome.storage.session.set({ lastDiagnostics: value?.diagnostics || null });
+    if (value?.error) throw Error(value.error);
     if (!value?.text)
-      throw Error("Čitanje tabele nije uspelo. Tab mora biti otvoren i spisak učitan.");
+      throw Error(
+        "Chrome nije vratio podatke tabele. Ponovo učitajte dodatak i povežite Backoffice tab.",
+      );
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value.text));
     const id = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
     const snapshot = {
@@ -98,7 +102,7 @@ export async function handleMessage(message, sender) {
     )
       throw Error("Neispravan kanal prijavljenog operatera.");
     if (message.refresh === true) await capture();
-    const session = await chrome.storage.session.get([SNAPSHOT, "lastError"]);
+    const session = await chrome.storage.session.get([SNAPSHOT, "lastError", "lastDiagnostics"]);
     if (session.lastError) throw Error(session.lastError);
     return {
       snapshot: session[SNAPSHOT] || null,
@@ -109,13 +113,14 @@ export async function handleMessage(message, sender) {
   if (sender.url !== chrome.runtime.getURL("popup.html"))
     throw Error("Komanda je dostupna samo iz dodatka.");
   if (message.type === "state") {
-    const session = await chrome.storage.session.get([SNAPSHOT, "lastError"]);
+    const session = await chrome.storage.session.get([SNAPSHOT, "lastError", "lastDiagnostics"]);
     const latest = session[SNAPSHOT];
     return {
       settings,
       count: latest?.count,
       capturedAt: latest?.capturedAt,
       error: session.lastError,
+      diagnostics: session.lastDiagnostics,
     };
   }
   if (message.type === "bind") {
@@ -130,7 +135,7 @@ export async function handleMessage(message, sender) {
         .trim()
         .slice(0, 300);
       settings.automatic = false;
-      await chrome.storage.session.remove([SNAPSHOT, "lastError"]);
+      await chrome.storage.session.remove([SNAPSHOT, "lastError", "lastDiagnostics"]);
     }
     await chrome.storage.local.set({ [CONFIG]: settings });
     await schedule(settings);
@@ -148,7 +153,7 @@ export async function handleMessage(message, sender) {
   if (message.type === "capture") return { snapshot: await capture() };
   if (message.type === "disconnect") {
     await chrome.storage.local.remove(CONFIG);
-    await chrome.storage.session.remove([SNAPSHOT, "lastError"]);
+    await chrome.storage.session.remove([SNAPSHOT, "lastError", "lastDiagnostics"]);
     await chrome.alarms.clear(ALARM);
     await chrome.scripting.unregisterContentScripts({ ids: ["scoreguard-relay"] }).catch(() => {});
     return { ok: true };

@@ -21,6 +21,26 @@ async function show() {
         " vidljivih mečeva · pročitano " +
         new Date(state.capturedAt).toLocaleTimeString("sr-Latn-RS")
       : "Povežite oba taba, pa pročitajte tabelu.");
+
+  $("reading-details").hidden = !state.diagnostics;
+  if (state.diagnostics) {
+    const d = state.diagnostics;
+    $("diagnostics").textContent =
+      "Verzija: 0.1.1\nDokumenti: " +
+      d.documents +
+      "\nTabele: " +
+      d.tables +
+      "\nGrid komponente: " +
+      d.grids +
+      "\nRedovi sa F: " +
+      d.footballRows +
+      "\nKandidati: " +
+      d.candidates +
+      "\nOkviri: " +
+      d.frames +
+      "\nNedostupni okviri: " +
+      d.inaccessibleFrames;
+  }
 }
 function action(id, task) {
   $(id).addEventListener("click", async () => {
@@ -28,6 +48,7 @@ function action(id, task) {
       await task();
       await show();
     } catch (error) {
+      await show().catch(() => {});
       $("status").textContent = error.message;
     }
   });

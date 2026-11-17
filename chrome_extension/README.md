@@ -42,3 +42,11 @@ Ako postoji više tabela, u polje **Selektor tabele** unesi selektor konkretnog 
 ## Podaci i dozvole
 
 Dodatak traži pristup samo sajtovima koje povežeš. Lokalno čuva njihove adrese bez parametara, selektor i izbor automatike. Poslednji snimak mečeva čuva se u privremenom prostoru dodatka i nestaje pri zatvaranju pregledača ili prekidu povezivanja. Snimak ide kroz komponentu već prijavljenog ScoreGuard panela. Dodatak ne preuzima kolačiće, lozinke, druge stranice ili sadržaj ostatka Backoffice-a.
+
+## Ažuriranje na 0.1.1 i provera čitanja
+
+Posle ažuriranja GitHub aplikacije ponovo preuzmi dodatak sa stranice **Chrome uvoz**. Raspakuj ga preko postojeće fascikle dodatka, potvrdi zamenu fajlova, pa na `chrome://extensions` klikni kružnu strelicu **Reload / Ponovo učitaj** za ScoreGuard. U prozoru dodatka treba da piše **v0.1.1**. Ponovo poveži Backoffice i ScoreGuard tabove i klikni **Pročitaj sada**.
+
+Ova verzija razlikuje ugnježdene kopije iste tabele od različitih spiskova, podržava uobičajene grid redove, učitane okvire sa istog porekla i otvorene shadow komponente. Ne spaja dve različite liste niti bira jednu od dve liste sa različitim rezultatima.
+
+Ako čitanje ne uspe, otvori **Detalji čitanja** i kopiraj prikazani tekst. Tu su samo broj dokumenata, tabela, gridova, fudbalskih redova i okvira. Nazivi timova, rezultati, korisnički nalozi i ostatak stranice nisu deo tog pregleda. Taj tekst i konkretna poruka greške omogućavaju prilagođavanje stvarnoj strukturi Backoffice-a bez pristupa nalogu.
