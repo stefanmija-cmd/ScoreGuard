@@ -37,6 +37,32 @@ function capture(tables, selector = "", reportErrors = false) {
     { document },
   );
 }
+function slottedCell(value, index, extra = {}) {
+  const content = {
+    tagName: "VAADIN-GRID-CELL-CONTENT",
+    childNodes: typeof value === "string" ? [{ nodeType: 3, nodeValue: value }] : value,
+  };
+  const slot = { tagName: "SLOT", assignedNodes: () => [content] };
+  return {
+    innerText: "",
+    style: { order: String(index) },
+    childNodes: [slot],
+    querySelectorAll: () => [slot],
+    ...extra,
+  };
+}
+function cellGrid(cells, display = "flex") {
+  return {
+    tagName: "TABLE",
+    querySelectorAll: () => [
+      {
+        style: { display },
+        getClientRects: () => [{}],
+        querySelectorAll: () => cells,
+      },
+    ],
+  };
+}
 test("passive capture serializes only documented football cells and never loads another page", () => {
   const result = capture([table([fields, ["B", "Basketball", "1"]])]);
   assert.equal(result.count, 1);
@@ -491,6 +517,147 @@ test("slotted football cells produce the native import format without reading fo
   assert.equal(imported.rows[0].score, "0:0");
   assert.ok(result.diagnostics.slottedCells >= 12);
   assert.doesNotMatch(result.text, /secret-form-value/);
+});
+
+test("seventeen virtualized Vaadin rows use displayed CSS column order instead of recycled DOM order", () => {
+  const order = [0, 6, 7, 8, 1, 3, 2, 5, 4, 9, 10, 11, 12];
+  const rows = Array.from({ length: 17 }, (_, index) => {
+    const values = [...fields];
+    values[2] = String(72499 + index);
+    const cells = values.map((value, column) => slottedCell(value, column));
+    return cellGrid(order.map((index) => cells[index])).querySelectorAll()[0];
+  });
+  const grid = { tagName: "TABLE", querySelectorAll: () => rows };
+  const result = capture([grid]);
+  assert.equal(result.count, 17);
+  assert.equal(result.diagnostics.footballRows, 17);
+  assert.equal(result.diagnostics.cssOrderedRows, 17);
+  assert.equal(result.diagnostics.malformedRows, 0);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  assert.equal(imported.rows[0].internalId, "72499");
+  assert.equal(imported.rows[16].internalId, "72515");
+  assert.equal(imported.rows[16].match, "Zamora – Atletico Barinas");
+  assert.equal(imported.rows[16].time, "21:30");
+  assert.equal(imported.rows[16].score, "0:0");
+});
+
+test("a flex grid's displayed CSS order takes precedence over stale ARIA indexes", () => {
+  const order = [0, 6, 7, 8, 1, 3, 2, 5, 4, 9, 10, 11, 12];
+  const cells = fields.map((value, index) => slottedCell(value, index));
+  const recycled = order.map((index, position) => ({
+    ...cells[index],
+    getAttribute: () => String(position + 1),
+  }));
+  assert.equal(capture([cellGrid(recycled)]).text, fields.slice(0, 12).join("\t"));
+});
+
+test("slotted inline fragments preserve codes, scores and clock digits without invented spaces", () => {
+  const cells = fields.map((value, index) => slottedCell(value, index));
+  const span = (text) => ({ tagName: "SPAN", childNodes: [{ nodeType: 3, nodeValue: text }] });
+  cells[2] = slottedCell([span("72"), span("499")], 2);
+  cells[5] = slottedCell([span("sre"), span("21"), span(":"), span("30")], 5);
+  cells[7] = slottedCell([span("1"), span("0")], 7);
+  const result = capture([cellGrid(cells)]);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  assert.equal(imported.rows[0].internalId, "72499");
+  assert.equal(imported.rows[0].time, "21:30");
+  assert.equal(imported.rows[0].score, "10:0");
+});
+
+test("rendered slotted text preserves the actual visible clock instead of hidden renderer markup", () => {
+  const cells = fields.map((value, index) => slottedCell(value, index));
+  cells[5] = slottedCell("private-renderer-markup", 5, { innerText: "sre 21:30" });
+  const result = capture([cellGrid(cells)]);
+  assert.equal(result.text, fields.slice(0, 12).join("\t"));
+  assert.doesNotMatch(result.text, /private-renderer/);
+});
+
+test("hidden helper columns and blank prefix cells do not shift or fill missing score columns", () => {
+  const values = [fields[0], "", ...fields.slice(1)];
+  values[9] = ""; // The away score is absent and must remain absent.
+  const cells = values.map((value, index) => slottedCell(value, index));
+  cells.splice(
+    3,
+    0,
+    slottedCell("private-helper", -1, { style: { order: "-1", display: "none" } }),
+  );
+  const result = capture([cellGrid(cells)]);
+  const imported = mapNativeClipboard(parseNativeClipboard(result.text), {
+    baseDate: "2026-11-11",
+  });
+  assert.deepEqual(imported.errors, []);
+  assert.equal(imported.rows[0].internalId, "72499");
+  assert.equal(imported.rows[0].score, null);
+  assert.equal(imported.rows[0].ht, "0:0");
+  assert.equal(result.diagnostics.hiddenCells, 1);
+  assert.doesNotMatch(result.text, /private-helper/);
+});
+
+test("an invalid row blocks the whole capture and diagnostics reveal only numeric failure counts", () => {
+  const values = Array.from({ length: 17 }, (_, index) => [
+    ...fields.slice(0, 2),
+    String(72499 + index),
+    ...fields.slice(3),
+  ]);
+  values[10][2] = "private-broken-code";
+  const result = capture([table(values)], "", true);
+  assert.match(result.error, /očekivane kolone/);
+  assert.equal(result.text, undefined);
+  assert.equal(result.diagnostics.footballRows, 17);
+  assert.equal(result.diagnostics.malformedRows, 1);
+  assert.equal(result.diagnostics.invalidCode, 1);
+  assert.equal(result.diagnostics.invalidTime, 0);
+  assert.doesNotMatch(JSON.stringify(result), /private-broken-code|Zamora|Barinas|Venecuela/);
+});
+
+test("a real table row ignores ineffective CSS order and uses complete ARIA column indexes", () => {
+  const cells = fields
+    .map((value, index) =>
+      slottedCell(value, fields.length - index, {
+        getAttribute: () => String(index + 1),
+      }),
+    )
+    .reverse();
+  const result = capture([cellGrid(cells, "table-row")]);
+  assert.equal(result.text, fields.slice(0, 12).join("\t"));
+  assert.equal(result.diagnostics.cssOrderedRows, 0);
+  assert.equal(result.diagnostics.ariaOrderedRows, 1);
+});
+
+test("a missing or invalid kickoff cannot be replaced by a halftime score that looks like a clock", () => {
+  for (const time of ["", "25:00"]) {
+    const values = [...fields];
+    values[5] = time;
+    values[7] = "12";
+    values[9] = "12:00";
+    const result = capture([table([values])], "", true);
+    assert.equal(result.text, undefined);
+    assert.equal(result.diagnostics.invalidTime, 1);
+  }
+});
+
+test("extension version, relay and Streamlit component cache identifiers are released together", () => {
+  const read = (path) => fs.readFileSync(new URL("../" + path, import.meta.url), "utf8");
+  const version = JSON.parse(read("chrome_extension/manifest.json")).version;
+  assert.ok(read("chrome_extension/popup.html").includes("v" + version));
+  assert.ok(read("chrome_extension/popup.mjs").includes("Verzija: " + version));
+  assert.ok(read("chrome_extension/relay.js").includes('relayVersion: "' + version + '"'));
+  assert.ok(
+    read("streamlit_panel/chrome_component/bridge.js").includes(
+      'relayVersion === "' + version + '"',
+    ),
+  );
+  assert.ok(read("streamlit_panel/chrome_component/index.html").includes("bridge.js?v=" + version));
+  const component = read("streamlit_panel/chrome_import.py"),
+    suffix = version.replaceAll(".", "");
+  assert.ok(component.includes("scoreguard_chrome_bridge_v" + suffix));
+  assert.ok(component.includes("scoreguard_chrome_receiver_v" + suffix));
 });
 
 test("opening status restores a missing alarm without postponing an existing deadline", async (t) => {

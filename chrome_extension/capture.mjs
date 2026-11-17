@@ -11,6 +11,14 @@ export function captureSnapshot(selector = "", reportErrors = false) {
     grids: 0,
     footballRows: 0,
     candidates: 0,
+    ariaOrderedRows: 0,
+    cssOrderedRows: 0,
+    hiddenCells: 0,
+    columnCounts: [],
+    malformedRows: 0,
+    invalidCode: 0,
+    invalidTime: 0,
+    missingNames: 0,
   };
   try {
     if (
@@ -81,24 +89,88 @@ export function captureSnapshot(selector = "", reportErrors = false) {
       )
         return "";
       if (node.nodeType === 3) return node.nodeValue || "";
+      if (node.tagName === "BR") return " ";
       if (node.tagName === "SLOT") {
         const assigned = node.assignedNodes?.({ flatten: true }) || [];
         if (assigned.length)
-          return [...assigned].map((child) => composedText(child, visited, depth + 1)).join(" ");
+          return [...assigned].map((child) => composedText(child, visited, depth + 1)).join("");
       }
       if (node.shadowRoot) return composedText(node.shadowRoot, visited, depth + 1);
-      if (node.childNodes?.length)
-        return [...node.childNodes]
+      if (node.childNodes?.length) {
+        const text = [...node.childNodes]
           .map((child) => composedText(child, visited, depth + 1))
-          .join(" ");
+          .join("");
+        return /^(?:DIV|P|LI|SECTION|VAADIN-GRID-CELL-CONTENT)$/.test(node.tagName)
+          ? " " + text + " "
+          : text;
+      }
       return node.innerText || node.textContent || "";
     }
     function cellText(cell) {
       if (cell.shadowRoot || cell.querySelectorAll?.("slot").length) {
         diagnostics.slottedCells++;
-        return composedText(cell);
+        return cell.innerText?.trim() ? cell.innerText : composedText(cell);
       }
       return cell.innerText || cell.textContent || "";
+    }
+    const styles = new WeakMap();
+    function styleOf(cell) {
+      if (!styles.has(cell))
+        styles.set(
+          cell,
+          cell.ownerDocument?.defaultView?.getComputedStyle?.(cell) || cell.style || {},
+        );
+      return styles.get(cell);
+    }
+    function orderedCells(row) {
+      const cells = [...row.querySelectorAll(cellSelector)].filter((cell) => {
+        const style = styleOf(cell);
+        const hidden =
+          cell.hidden ||
+          style.display === "none" ||
+          ["hidden", "collapse"].includes(style.visibility);
+        if (hidden) diagnostics.hiddenCells++;
+        return !hidden;
+      });
+      const orders = cells.map((cell) => Number(styleOf(cell).order || 0));
+      // Vaadin reuses cells in DOM order and places their columns with CSS order.
+      const display = styleOf(row).display;
+      if (
+        (!display || /^(?:inline-)?(?:flex|grid)$/.test(display)) &&
+        orders.every(Number.isInteger) &&
+        new Set(orders).size > 1
+      ) {
+        diagnostics.cssOrderedRows++;
+        return cells
+          .map((cell, index) => ({ cell, index, order: orders[index] }))
+          .sort((a, b) => a.order - b.order || a.index - b.index)
+          .map(({ cell }) => cell);
+      }
+      const indexes = cells.map((cell) => cell.getAttribute?.("aria-colindex") || "");
+      if (
+        cells.length &&
+        indexes.every((index) => /^[1-9]\d*$/.test(index)) &&
+        new Set(indexes.map(Number)).size === cells.length
+      ) {
+        diagnostics.ariaOrderedRows++;
+        return cells.sort(
+          (a, b) =>
+            Number(a.getAttribute("aria-colindex")) - Number(b.getAttribute("aria-colindex")),
+        );
+      }
+      return cells;
+    }
+    function schedule(value) {
+      const found =
+        /^(?:(pon|uto|sre|čet|cet|pet|sub|ned)\.?\s*)?([01]\d|2[0-3])\s*:\s*([0-5]\d)$/i.exec(
+          value,
+        );
+      return found
+        ? {
+            text: (found[1] ? found[1] + " " : "") + found[2] + ":" + found[3],
+            weekday: Boolean(found[1]),
+          }
+        : null;
     }
     const uniqueRoots = [...new Set(roots)];
     diagnostics.tables = uniqueRoots.filter((root) => root.tagName === "TABLE").length;
@@ -108,18 +180,13 @@ export function captureSnapshot(selector = "", reportErrors = false) {
     for (const root of uniqueRoots) {
       if (["BODY", "HTML"].includes(root.tagName)) throw Error("Izaberite samo tabelu mečeva.");
       const records = [];
-      let footballRows = 0;
+      let footballRows = 0,
+        invalidCode = 0,
+        invalidTime = 0,
+        missingNames = 0;
       for (const row of root.querySelectorAll(rowSelector)) {
         if (!row.getClientRects().length) continue;
-        let cells = [...row.querySelectorAll(cellSelector)];
-        if (
-          cells.length &&
-          cells.every((cell) => /^\d+$/.test(cell.getAttribute?.("aria-colindex") || ""))
-        )
-          cells.sort(
-            (a, b) =>
-              Number(a.getAttribute("aria-colindex")) - Number(b.getAttribute("aria-colindex")),
-          );
+        const cells = orderedCells(row);
         const fields = cells.map((cell) =>
           cellText(cell)
             .replace(/\s+/g, " ")
@@ -131,18 +198,29 @@ export function captureSnapshot(selector = "", reportErrors = false) {
         );
         if (sportIndex < 0) continue;
         footballRows++;
-        const match = fields.slice(sportIndex);
-        match[0] = "F";
         if (
-          match.length < 6 ||
-          !/^\d{1,10}$/.test(match[2]) ||
-          !match[1] ||
-          !match[3] ||
-          !match[4] ||
-          !/^(?:(?:pon|uto|sre|čet|cet|pet|sub|ned)\.?\s+)?(?:[01]\d|2[0-3]):[0-5]\d$/i.test(
-            match[5],
-          )
-        ) {
+          !diagnostics.columnCounts.includes(cells.length) &&
+          diagnostics.columnCounts.length < 32
+        )
+          diagnostics.columnCounts.push(cells.length);
+        let match = fields.slice(sportIndex);
+        match[0] = "F";
+        const timeIndex = match.findIndex((field, index) => {
+          const value = index >= 5 && index <= 10 ? schedule(field) : null;
+          return value && (index === 5 || value.weekday);
+        });
+        if (timeIndex >= 5) {
+          const prefix = match.slice(0, timeIndex).filter(Boolean);
+          if (prefix.length === 5)
+            match = [...prefix, schedule(match[timeIndex]).text, ...match.slice(timeIndex + 1)];
+        }
+        const codeValid = /^\d{1,10}$/.test(match[2] || ""),
+          timeValid = Boolean(schedule(match[5] || "")),
+          namesValid = Boolean(match[1] && match[3] && match[4]);
+        if (!codeValid) invalidCode++;
+        if (!timeValid) invalidTime++;
+        if (!namesValid) missingNames++;
+        if (match.length < 6 || !codeValid || !timeValid || !namesValid) {
           malformed.push(match.length);
           continue;
         }
@@ -157,6 +235,13 @@ export function captureSnapshot(selector = "", reportErrors = false) {
         if (records.length > 1000) throw Error("Najviše 1.000 mečeva po prenosu.");
       }
       diagnostics.footballRows = Math.max(diagnostics.footballRows, footballRows);
+      diagnostics.malformedRows = Math.max(
+        diagnostics.malformedRows,
+        footballRows - records.length,
+      );
+      diagnostics.invalidCode = Math.max(diagnostics.invalidCode, invalidCode);
+      diagnostics.invalidTime = Math.max(diagnostics.invalidTime, invalidTime);
+      diagnostics.missingNames = Math.max(diagnostics.missingNames, missingNames);
       if (records.length && footballRows === records.length) candidates.push(records);
     }
     const unique = [

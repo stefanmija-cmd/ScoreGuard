@@ -139,6 +139,8 @@ Posle odjave prijem treba ponovo uključiti i potvrditi spisak. Opcija **Pauzira
 
 ## 14. Provera automatskog Chrome uvoza
 
-Dodatak v0.1.3 prikazuje poslednje i sledeće čitanje. Svako novo uspešno čitanje ažurira **Interni unos**, i kada su rezultati nepromenjeni. Osvežavanje ekrana na 15 sekundi samo prikazuje postojeće podatke. Vreme preuzimanja rezultata sa sajtova ostaje posebno i ne menja se samim uvozom.
+Dodatak v0.1.4 prikazuje poslednje i sledeće čitanje. Svako novo uspešno čitanje ažurira **Interni unos**, i kada su rezultati nepromenjeni. Osvežavanje ekrana na 15 sekundi samo prikazuje postojeće podatke. Vreme preuzimanja rezultata sa sajtova ostaje posebno i ne menja se samim uvozom.
 
 Na stranici **Chrome uvoz** vidiš vreme poslednjeg uspešnog čitanja i uvoza. Ako piše da su provere izvora pauzirane, klikni **Uključi provere izvora na 5 minuta**, pa se vrati na pregled. Zatvoren tab, uspavan računar ili istek prijave i dalje prekidaju prenos; u levom meniju proveri poruku dodatka.
+
+Ako dodatak prepoznaje fudbalske redove, ali prijavljuje da nedostaju očekivane kolone, preuzmi v0.1.4 iz **Chrome uvoz**, zameni fajlove postojeće fascikle i klikni **Reload** na `chrome://extensions`. Ponovo poveži oba taba i potvrdi prvi spisak. Nova verzija podržava razliku između prikazanog redosleda kolona i HTML redosleda ćelija. **Detalji čitanja** sada pokazuju broj kolona i da li su problem šifra, vreme ili nazivi, bez slanja sadržaja spiska.

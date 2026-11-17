@@ -36,7 +36,7 @@ async function show() {
   if (state.diagnostics) {
     const d = state.diagnostics;
     $("diagnostics").textContent =
-      "Verzija: 0.1.3\nDokumenti: " +
+      "Verzija: 0.1.4\nDokumenti: " +
       d.documents +
       "\nShadow delovi: " +
       (d.shadowRoots || 0) +
@@ -50,6 +50,22 @@ async function show() {
       d.grids +
       "\nRedovi sa F: " +
       d.footballRows +
+      "\nBroj kolona: " +
+      (d.columnCounts?.join(", ") || "—") +
+      "\nSortiranje kolona CSS / ARIA: " +
+      (d.cssOrderedRows || 0) +
+      " / " +
+      (d.ariaOrderedRows || 0) +
+      "\nSkrivene ćelije: " +
+      (d.hiddenCells || 0) +
+      "\nNeispravni redovi: " +
+      (d.malformedRows || 0) +
+      "\nNeispravna šifra: " +
+      (d.invalidCode || 0) +
+      "\nNeispravno vreme: " +
+      (d.invalidTime || 0) +
+      "\nNedostaju liga / timovi: " +
+      (d.missingNames || 0) +
       "\nKandidati: " +
       d.candidates +
       "\nOkviri: " +

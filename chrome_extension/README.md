@@ -65,8 +65,20 @@ U dodatku treba da piše **v0.1.3**. Zamenite fajlove dodatka, kliknite Reload n
 
 Svako čitanje ima sopstvenu oznaku prenosa, pa se novi snimak šalje i kada se rezultat nije promenio. **Interni unos** pokazuje vreme tog čitanja. Ažurirana aplikacija koristi tu oznaku za zajednički ciklus: ponovljena isporuka istog čitanja ne ponavlja proveru, a novi snimak poništava raniju proveru koja je još u toku. Flashscore/Futbol24 podaci zadržavaju stvarno vreme preuzimanja; zahtevi operatera unutar 15 sekundi mogu deliti isto preuzimanje.
 
-Za ovo usklađivanje nije potrebna nova verzija dodatka: v0.1.3 već šalje potrebnu oznaku i vreme čitanja. Posle ažuriranja aplikacije ponovo uključi prijem i potvrdi prvi spisak sa automatskim uvozom.
+Za samo usklađivanje v0.1.3 već šalje potrebnu oznaku i vreme čitanja. Za ispravljeno čitanje grid kolona koristi v0.1.4 prema koracima ispod.
 
 Dodatak prikazuje **Poslednji pokušaj**, **Poslednje čitanje** i **Sledeće čitanje**. Ako alarm nedostaje nakon ponovnog pokretanja, dodatak ga obnavlja. Otvoren prijemni panel proverava da li je termin dospeo, uz najviše jedno zakazano čitanje po petominutnom periodu. Ručno čitanje je dostupno u svakom trenutku.
 
 **Automatski uvoz** i **provera sportskih izvora** imaju zasebne prekidače. Ako Chrome uvoz prikazuje da su provere izvora pauzirane, kliknite **Uključi provere izvora na 5 minuta**. Samo uključivanje dodatka ne menja prethodno izabranu pauzu provera.
+
+## Ažuriranje na 0.1.4 — redosled i sadržaj grid ćelija
+
+1. Posle ažuriranja aplikacije izaberi **Manage app → Reboot app**.
+2. U **Chrome uvoz → Preuzmi Chrome dodatak** preuzmi novi ZIP.
+3. Raspakuj fajlove preko postojeće fascikle dodatka i potvrdi zamenu. Na `chrome://extensions` klikni **Reload / Ponovo učitaj**. U dodatku mora da piše **v0.1.4**.
+4. Ponovo poveži Backoffice i ScoreGuard tabove, klikni **Pročitaj sada**, pa uključi prijem i potvrdi spisak u ScoreGuard-u.
+5. Uključi čitanje na pet minuta, automatski uvoz i provere izabranih izvora.
+
+Vaadin i slični gridovi mogu zadržati ćelije u drugom HTML redosledu iako su kolone na ekranu iste. Čitanje sada koristi njihov prikazani CSS redosled, zatim potpune ARIA indekse ili uobičajeni HTML redosled. Skriveni pomoćni stupci se izostavljaju. Tekst iz slotova čuva cifre šifre, rezultata i vremena, a prazne kolone rezultata ostaju prazne. Jedan neispravan fudbalski red zaustavlja prenos cele tabele.
+
+**Detalji čitanja** pokazuju broj kolona, način sortiranja i brojeve redova sa neispravnom šifrom, vremenom ili nedostajućim nazivima. To su samo brojevi, bez sadržaja spiska. Ako se greška ponovi, taj pregled pokazuje koji deo čitanja zahteva dodatno prilagođavanje. Stvarna Backoffice stranica nije dostupna razvojnom testu; proverene su kontrolisane grid tabele sa istim brojem od 17 fudbalskih redova.
